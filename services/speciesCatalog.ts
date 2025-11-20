@@ -40,12 +40,11 @@ export const buildSpeciesCatalog = (
     }
 
     const normalizedCommon = (commonName || scientificName).trim();
-    const signature = signatureFromString(scientificName);
+    const seed = encodeURIComponent(`${key}-${normalizedCommon.toLowerCase().replace(/\s+/g, '-')}`);
     const imageUrl =
       IMAGE_OVERRIDES[key] ||
-      `https://source.unsplash.com/featured/480x320?${encodeURIComponent(
-        scientificName
-      )}%20tree&sig=${signature}`;
+      // Use Picsum with a deterministic, human-readable seed so each species gets a distinct image without repetition.
+      `https://picsum.photos/seed/${seed}/480/320`;
 
     catalog.set(key, {
       scientificName: scientificName.trim(),
