@@ -1,0 +1,5 @@
+{
+  "name": "Tree Carbon Xray",
+  "description": "Interactive tool to inventory trees and project carbon sequestration using US Forest Service growth models and transparent visuals.",
+  "requestFramePermissions": []
+}
