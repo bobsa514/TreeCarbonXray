@@ -4,10 +4,10 @@ import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Calculator from './components/Calculator';
 import Analytics from './components/Analytics';
-import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo } from './types';
+import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from './types';
 import { DATA_URLS } from './constants';
-import { parseBiomassDensity, parseGrowthCoefficients } from './services/dataService';
-import { buildSpeciesCatalog } from './services/speciesCatalog';
+import { parseBiomassDensity, parseGrowthCoefficients, parseRegionalInfo } from './services/dataService';
+import { buildSpeciesCatalog, loadSpeciesImageMap } from './services/speciesCatalog';
 import { Menu, Loader2, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -22,6 +22,8 @@ const App: React.FC = () => {
   const [densities, setDensities] = useState<BiomassDensity[]>([]);
   const [growthCoeffs, setGrowthCoeffs] = useState<GrowthCoefficient[]>([]);
   const [speciesList, setSpeciesList] = useState<SpeciesInfo[]>([]);
+  const [regions, setRegions] = useState<RegionOption[]>([]);
+  const [selectedRegion, setSelectedRegion] = useState<string>('');
   
   // Project State (The User's Inventory)
   const [projectTrees, setProjectTrees] = useState<ProjectTree[]>([]);
@@ -31,15 +33,18 @@ const App: React.FC = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // Parallel fetch for essential calculation data
-        const [ts9Res, ts6Res] = await Promise.all([
+
+        // Parallel fetch for essential calculation data and curated image map
+        const [ts9Res, ts6Res, ts1Res, speciesImages] = await Promise.all([
           fetch(DATA_URLS.TS9_BIOMASS_DENSITY),
-          fetch(DATA_URLS.TS6_GROWTH_COEFFICIENTS)
+          fetch(DATA_URLS.TS6_GROWTH_COEFFICIENTS),
+          fetch(DATA_URLS.TS1_REGIONAL_INFO),
+          loadSpeciesImageMap(),
         ]);
 
         if (!ts9Res.ok) throw new Error(`Failed to load Density Data (TS9): ${ts9Res.statusText}`);
         if (!ts6Res.ok) throw new Error(`Failed to load Growth Data (TS6): ${ts6Res.statusText}`);
+        // TS1 failure is non-fatal — region selector will just be empty
 
         const ts9Text = await ts9Res.text();
         const ts6Text = await ts6Res.text();
@@ -51,8 +56,20 @@ const App: React.FC = () => {
         setGrowthCoeffs(parsedGrowthCoeffs);
 
         // Generate species catalog with images for autocomplete and picker
-        const catalog = buildSpeciesCatalog(parsedDensities, parsedGrowthCoeffs);
+        const catalog = buildSpeciesCatalog(parsedDensities, parsedGrowthCoeffs, speciesImages);
         setSpeciesList(catalog);
+
+        if (ts1Res.ok) {
+          const ts1Text = await ts1Res.text();
+          const rawRegions = parseRegionalInfo(ts1Text);
+          setRegions(rawRegions.map(r => ({
+            code: r.regionCode,
+            name: r.regionName,
+            city: r.city,
+            state: r.state,
+          })));
+        }
+
         setLoading(false);
 
       } catch (err) {
@@ -97,13 +114,16 @@ const App: React.FC = () => {
     switch(activeTab) {
       case 'builder':
         return (
-          <Calculator 
-            densities={densities} 
+          <Calculator
+            densities={densities}
             growthCoeffs={growthCoeffs}
-            projectTrees={projectTrees} 
+            projectTrees={projectTrees}
             setProjectTrees={setProjectTrees}
             switchToDashboard={() => setActiveTab('dashboard')}
             speciesList={speciesList}
+            regions={regions}
+            selectedRegion={selectedRegion}
+            setSelectedRegion={setSelectedRegion}
           />
         );
       case 'dashboard':
@@ -117,13 +137,16 @@ const App: React.FC = () => {
         return <Analytics projectTrees={projectTrees} />;
       default:
         return (
-          <Calculator 
-            densities={densities} 
+          <Calculator
+            densities={densities}
             growthCoeffs={growthCoeffs}
-            projectTrees={projectTrees} 
+            projectTrees={projectTrees}
             setProjectTrees={setProjectTrees}
             switchToDashboard={() => setActiveTab('dashboard')}
             speciesList={speciesList}
+            regions={regions}
+            selectedRegion={selectedRegion}
+            setSelectedRegion={setSelectedRegion}
           />
         );
     }

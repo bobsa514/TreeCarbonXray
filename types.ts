@@ -77,3 +77,10 @@ export interface SpeciesInfo {
 }
 
 export type TabView = 'builder' | 'dashboard' | 'analytics';
+
+export interface RegionOption {
+    code: string;
+    name: string;
+    city: string;
+    state: string;
+}
