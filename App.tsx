@@ -7,7 +7,7 @@ import Analytics from './components/Analytics';
 import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from './types';
 import { DATA_URLS } from './constants';
 import { parseBiomassDensity, parseGrowthCoefficients, parseRegionalInfo } from './services/dataService';
-import { buildSpeciesCatalog, loadSpeciesImageMap } from './services/speciesCatalog';
+import { buildSpeciesCatalog, hydrateSpeciesCatalogImages, loadSpeciesImageMap } from './services/speciesCatalog';
 import { forecastTreeGrowth } from './services/carbonCalculator';
 import { Menu, Loader2, AlertTriangle } from 'lucide-react';
 
@@ -88,7 +88,12 @@ const App: React.FC = () => {
         growthCoeffs,
         selectedRegion || undefined
       );
-      return { ...tree, forecastData: annualData, currentCarbon: currentCarbon * tree.count };
+      return {
+        ...tree,
+        forecastData: annualData,
+        initialHeight: annualData[0]?.height ?? tree.initialHeight,
+        currentCarbon: currentCarbon * tree.count
+      };
     }));
   }, [needsReconcile, densities, growthCoeffs, horizon, selectedRegion]);
 
@@ -122,6 +127,12 @@ const App: React.FC = () => {
         // Generate species catalog with images for autocomplete and picker
         const catalog = buildSpeciesCatalog(parsedDensities, parsedGrowthCoeffs, speciesImages);
         setSpeciesList(catalog);
+        // Enrich fallback cards in the background with species-specific images.
+        void hydrateSpeciesCatalogImages(catalog, speciesImages)
+          .then(setSpeciesList)
+          .catch((imageErr) => {
+            console.warn('Image enrichment skipped:', imageErr);
+          });
 
         if (ts1Res.ok) {
           const ts1Text = await ts1Res.text();

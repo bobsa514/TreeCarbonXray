@@ -69,7 +69,7 @@ const Calculator: React.FC<CalculatorProps> = ({
     prevHorizonRef.current = horizon;
     if (projectTreesRef.current.length === 0) return;
     const updated = projectTreesRef.current.map(tree => {
-      const { annualData } = forecastTreeGrowth(
+      const { annualData, currentCarbon } = forecastTreeGrowth(
         tree.speciesScientific,
         tree.initialDbh,
         horizon,
@@ -77,7 +77,12 @@ const Calculator: React.FC<CalculatorProps> = ({
         growthCoeffs,
         selectedRegionRef.current || undefined
       );
-      return { ...tree, forecastData: annualData };
+      return {
+        ...tree,
+        forecastData: annualData,
+        initialHeight: annualData[0]?.height ?? tree.initialHeight,
+        currentCarbon: currentCarbon * tree.count,
+      };
     });
     setProjectTrees(updated);
   }, [horizon, densities, growthCoeffs, setProjectTrees]);
@@ -88,7 +93,7 @@ const Calculator: React.FC<CalculatorProps> = ({
     prevRegionRef.current = selectedRegion;
     if (projectTreesRef.current.length === 0) return;
     const updated = projectTreesRef.current.map(tree => {
-      const { annualData } = forecastTreeGrowth(
+      const { annualData, currentCarbon } = forecastTreeGrowth(
         tree.speciesScientific,
         tree.initialDbh,
         horizon,
@@ -96,7 +101,12 @@ const Calculator: React.FC<CalculatorProps> = ({
         growthCoeffs,
         selectedRegion || undefined
       );
-      return { ...tree, forecastData: annualData };
+      return {
+        ...tree,
+        forecastData: annualData,
+        initialHeight: annualData[0]?.height ?? tree.initialHeight,
+        currentCarbon: currentCarbon * tree.count,
+      };
     });
     setProjectTrees(updated);
   }, [selectedRegion, densities, growthCoeffs, horizon, setProjectTrees]);
@@ -175,7 +185,15 @@ const Calculator: React.FC<CalculatorProps> = ({
 
   const updateTreeCount = (id: string, newCount: number) => {
     if (!Number.isFinite(newCount) || newCount < 1) return;
-    setProjectTrees(prev => prev.map(t => t.id === id ? { ...t, count: newCount } : t));
+    setProjectTrees(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      const perTreeCurrent = t.forecastData[0]?.carbonStorage ?? 0;
+      return {
+        ...t,
+        count: newCount,
+        currentCarbon: perTreeCurrent * newCount,
+      };
+    }));
   };
 
   const selectSpecies = (info: SpeciesInfo) => {

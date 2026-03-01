@@ -11,7 +11,9 @@ densities: BiomassDensity[]       — from TS9 (species biomass density kg/m³)
 growthCoeffs: GrowthCoefficient[] — from TS6 (region × species × equation)
 regions: RegionOption[]           — from TS1 (16 USFS city regions)
   ↓ buildSpeciesCatalog() in services/speciesCatalog.ts
-speciesList: SpeciesInfo[]        — deduped, sorted, image-enriched
+speciesList: SpeciesInfo[]        — deduped, sorted, curated-image first
+  ↓ hydrateSpeciesCatalogImages() in services/speciesCatalog.ts
+speciesList: SpeciesInfo[]        — background enrichment from Wikipedia + cached in localStorage
   ↓ user input (Calculator.tsx)
 projectTrees: ProjectTree[]       — inventory with full forecastData per tree group
   ↓ render
@@ -121,6 +123,12 @@ Behavior:
 - On change: debounced 500ms save (catches projectTrees, horizon, selectedRegion)
 - On quota error: silently skip
 - On parse error: remove corrupt key and start fresh
+
+Additional key: `treecarbonxray_species_images_v1`
+
+- Stores runtime-resolved species image URLs (scientific/common lookup keys).
+- Populated by `hydrateSpeciesCatalogImages()` after first successful resolution.
+- Keeps species picker images stable and reduces repeated network lookups.
 
 ## Data Types Reference
 
