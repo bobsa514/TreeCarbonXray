@@ -4,7 +4,7 @@
 
 ```
 GitHub Raw URLs (constants.ts)
-  ↓ fetch() on mount — parallel: TS9 + TS6 + TS1 + species-images.yaml
+  ↓ fetch() on mount — network-first with local CSV fallback (TS9 + TS6 + TS1) + species-images.yaml
 App.tsx (data loading state: loading → loaded/error)
   ↓ parsed via services/dataService.ts
 densities: BiomassDensity[]       — from TS9 (species biomass density kg/m³)
@@ -19,6 +19,11 @@ projectTrees: ProjectTree[]       — inventory with full forecastData per tree 
   ↓ render
 Calculator → Dashboard → Analytics (tab views)
 ```
+
+### Fallback Data Strategy
+- Primary source: GitHub Raw URLs in `constants.ts`.
+- Fallback source: in-bundle CSV assets from `Data/` resolved via `new URL(..., import.meta.url)` in `App.tsx`.
+- Loader: `loadCsvWithFallback(primaryUrl, fallbackUrl, label)`.
 
 ## Component Hierarchy
 

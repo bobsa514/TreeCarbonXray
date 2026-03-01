@@ -12,12 +12,36 @@ import { forecastTreeGrowth } from './services/carbonCalculator';
 import { Menu, Loader2, AlertTriangle } from 'lucide-react';
 
 const STORAGE_KEY = 'treecarbonxray_v1';
+const FALLBACK_DATA_URLS = {
+  TS1_REGIONAL_INFO: new URL('./Data/TS1_Regional_information.csv', import.meta.url).href,
+  TS6_GROWTH_COEFFICIENTS: new URL('./Data/TS6_Growth_coefficients.csv', import.meta.url).href,
+  TS9_BIOMASS_DENSITY: new URL('./Data/TS9_Biomass_density_factors.csv', import.meta.url).href,
+};
 
 interface StoredState {
   projectTrees: ProjectTree[];
   horizon: number;
   selectedRegion: string;
 }
+
+const loadCsvWithFallback = async (
+  primaryUrl: string,
+  fallbackUrl: string,
+  label: string
+): Promise<string> => {
+  try {
+    const response = await fetch(primaryUrl, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.text();
+  } catch (error) {
+    console.warn(`Primary ${label} load failed, using local fallback.`, error);
+    const fallbackResponse = await fetch(fallbackUrl, { cache: 'no-store' });
+    if (!fallbackResponse.ok) {
+      throw new Error(`Failed to load ${label} from both primary and fallback sources.`);
+    }
+    return fallbackResponse.text();
+  }
+};
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabView>('builder');
@@ -105,20 +129,26 @@ const App: React.FC = () => {
       try {
         setLoading(true);
 
-        // Parallel fetch for essential calculation data and curated image map
-        const [ts9Res, ts6Res, ts1Res, speciesImages] = await Promise.all([
-          fetch(DATA_URLS.TS9_BIOMASS_DENSITY),
-          fetch(DATA_URLS.TS6_GROWTH_COEFFICIENTS),
-          fetch(DATA_URLS.TS1_REGIONAL_INFO),
+        // Parallel fetch for essential calculation data and curated image map.
+        // TS files use network-first with local in-bundle fallback for resilience.
+        const [ts9Text, ts6Text, ts1Text, speciesImages] = await Promise.all([
+          loadCsvWithFallback(
+            DATA_URLS.TS9_BIOMASS_DENSITY,
+            FALLBACK_DATA_URLS.TS9_BIOMASS_DENSITY,
+            'Density Data (TS9)'
+          ),
+          loadCsvWithFallback(
+            DATA_URLS.TS6_GROWTH_COEFFICIENTS,
+            FALLBACK_DATA_URLS.TS6_GROWTH_COEFFICIENTS,
+            'Growth Data (TS6)'
+          ),
+          loadCsvWithFallback(
+            DATA_URLS.TS1_REGIONAL_INFO,
+            FALLBACK_DATA_URLS.TS1_REGIONAL_INFO,
+            'Regional Data (TS1)'
+          ),
           loadSpeciesImageMap(),
         ]);
-
-        if (!ts9Res.ok) throw new Error(`Failed to load Density Data (TS9): ${ts9Res.statusText}`);
-        if (!ts6Res.ok) throw new Error(`Failed to load Growth Data (TS6): ${ts6Res.statusText}`);
-        // TS1 failure is non-fatal — region selector will just be empty
-
-        const ts9Text = await ts9Res.text();
-        const ts6Text = await ts6Res.text();
 
         const parsedDensities = parseBiomassDensity(ts9Text);
         const parsedGrowthCoeffs = parseGrowthCoefficients(ts6Text);
@@ -136,16 +166,13 @@ const App: React.FC = () => {
             console.warn('Image enrichment skipped:', imageErr);
           });
 
-        if (ts1Res.ok) {
-          const ts1Text = await ts1Res.text();
-          const rawRegions = parseRegionalInfo(ts1Text);
-          setRegions(rawRegions.map(r => ({
-            code: r.regionCode,
-            name: r.regionName,
-            city: r.city,
-            state: r.state,
-          })));
-        }
+        const rawRegions = parseRegionalInfo(ts1Text);
+        setRegions(rawRegions.map(r => ({
+          code: r.regionCode,
+          name: r.regionName,
+          city: r.city,
+          state: r.state,
+        })));
 
         setLoading(false);
 
