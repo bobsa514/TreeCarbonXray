@@ -8,6 +8,7 @@ import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, R
 import { DATA_URLS } from './constants';
 import { parseBiomassDensity, parseGrowthCoefficients, parseRegionalInfo } from './services/dataService';
 import { buildSpeciesCatalog, loadSpeciesImageMap } from './services/speciesCatalog';
+import { forecastTreeGrowth } from './services/carbonCalculator';
 import { Menu, Loader2, AlertTriangle } from 'lucide-react';
 
 const STORAGE_KEY = 'treecarbonxray_v1';
@@ -36,6 +37,7 @@ const App: React.FC = () => {
   // Project State (The User's Inventory)
   const [projectTrees, setProjectTrees] = useState<ProjectTree[]>([]);
   const [horizon, setHorizon] = useState<number>(20);
+  const [needsReconcile, setNeedsReconcile] = useState(false);
 
   // Restore persisted project state on first load
   useEffect(() => {
@@ -43,7 +45,15 @@ const App: React.FC = () => {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed: StoredState = JSON.parse(saved);
-        if (Array.isArray(parsed.projectTrees)) setProjectTrees(parsed.projectTrees);
+        const valid = Array.isArray(parsed.projectTrees)
+          ? parsed.projectTrees.filter(
+              t => Array.isArray(t.forecastData) && t.forecastData.length > 0
+            )
+          : [];
+        if (valid.length > 0) {
+          setProjectTrees(valid);
+          setNeedsReconcile(true);  // flag for recalculation after data loads
+        }
         if (typeof parsed.horizon === 'number') setHorizon(parsed.horizon);
         if (typeof parsed.selectedRegion === 'string') setSelectedRegion(parsed.selectedRegion);
       }
@@ -64,6 +74,23 @@ const App: React.FC = () => {
     }, 500);
     return () => clearTimeout(timeout);
   }, [projectTrees, horizon, selectedRegion]);
+
+  // After data loads, reconcile any restored trees against fresh coefficients and current horizon
+  useEffect(() => {
+    if (!needsReconcile || densities.length === 0 || growthCoeffs.length === 0) return;
+    setNeedsReconcile(false);
+    setProjectTrees(prev => prev.map(tree => {
+      const { annualData, currentCarbon } = forecastTreeGrowth(
+        tree.speciesScientific,
+        tree.initialDbh,
+        horizon,
+        densities,
+        growthCoeffs,
+        selectedRegion || undefined
+      );
+      return { ...tree, forecastData: annualData, currentCarbon: currentCarbon * tree.count };
+    }));
+  }, [needsReconcile, densities, growthCoeffs, horizon, selectedRegion]);
 
   // Load Data on Mount
   useEffect(() => {
