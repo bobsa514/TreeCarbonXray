@@ -54,6 +54,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
         return Object.values(data).sort((a, b) => b.co2 - a.co2);
     }, [projectTrees]);
 
+    const totalSpeciesCO2 = useMemo(
+        () => speciesCarbonData.reduce((a, b) => a + b.co2, 0),
+        [speciesCarbonData]
+    );
+
     // 3. Scatter data (Current DBH vs Efficiency)
     const scatterData = useMemo(() => {
         const horizonIndex = projectTrees.length > 0 ? projectTrees[0].forecastData.length - 1 : 0;
@@ -195,8 +200,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {speciesCarbonData.map((row, i) => {
-                                        const totalProjectCo2 = Object.values(speciesCarbonData).reduce((a,b) => a + b.co2, 0);
-                                        const percentage = (row.co2 / totalProjectCo2) * 100;
+                                        const percentage = (row.co2 / totalSpeciesCO2) * 100;
                                         return (
                                             <tr key={i} className="hover:bg-gray-50">
                                                 <td className="px-4 py-3 font-medium text-gray-800">{row.name}</td>
