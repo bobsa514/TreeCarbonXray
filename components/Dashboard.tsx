@@ -18,7 +18,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
     const horizon = projectTrees[0].forecastData.length - 1;
 
     // Current (Year 0) vs Projected (Year End)
-    const currentTotalCO2 = projectTrees.reduce((acc, t) => acc + (t.currentCarbon), 0);
+    const currentTotalCO2 = projectTrees.reduce((acc, t) =>
+      acc + (t.forecastData[0]?.carbonStorage ?? 0) * t.count, 0);
     const projectedTotalCO2 = projectTrees.reduce((acc, t) => acc + (t.forecastData[horizon].carbonStorage * t.count), 0);
     
     const netSequestration = projectedTotalCO2 - currentTotalCO2;
@@ -200,7 +201,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
             <div>
                 <h3 className="text-xl font-bold text-forest-900 mb-2">Growth & Yield Analysis</h3>
                 <p className="text-forest-700 leading-relaxed">
-                    This project utilizes growth coefficients to model the biological maturation of the inventory. Over the next <span className="font-bold">{stats.horizon} years</span>, the total carbon storage is projected to increase by <span className="font-bold">{((stats.netSequestration / stats.currentTotalCO2) * 100).toFixed(0)}%</span> as trees increase in diameter and biomass.
+                    This project utilizes growth coefficients to model the biological maturation of the inventory. Over the next <span className="font-bold">{stats.horizon} years</span>, the total carbon storage is projected to increase by <span className="font-bold">{stats.currentTotalCO2 > 0 ? ((stats.netSequestration / stats.currentTotalCO2) * 100).toFixed(0) : 'N/A'}%</span> as trees increase in diameter and biomass.
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-4">
                      <div className="bg-white/60 p-4 rounded-lg">
