@@ -50,18 +50,19 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobileOpen, 
 
       {/* Sidebar */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-30 w-64 bg-forest-900 text-white transform transition-transform duration-300 ease-in-out
+        fixed lg:static inset-y-0 left-0 z-30 w-64 text-white transform transition-transform duration-300 ease-in-out
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         flex flex-col
-      `}>
-        <div className="flex items-center justify-center h-20 border-b border-forest-800">
+      `}
+      style={{ background: 'linear-gradient(180deg, #163f28 0%, #0d2619 100%)' }}>
+        <div className="flex items-center justify-center h-20 border-b" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
           <div className="flex items-center space-x-3">
-            <div className="bg-forest-500 p-2 rounded-lg">
+            <div className="p-2 rounded-lg" style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)' }}>
               <TreeDeciduous className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-wide leading-none">Tree Carbon Xray</h1>
-              <span className="text-xs text-forest-300 uppercase tracking-wider">Inventory & Forecast</span>
+              <span className="text-xs uppercase tracking-widest font-medium" style={{ color: 'rgba(255,255,255,0.45)' }}>Carbon Forecast</span>
             </div>
           </div>
         </div>
@@ -76,10 +77,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobileOpen, 
                 onClick={() => handleNavClick(item.id)}
                 className={`
                   flex items-center w-full px-4 py-3.5 rounded-xl transition-all duration-200 group
-                  ${isActive 
-                    ? 'bg-gradient-to-r from-forest-600 to-forest-700 text-white shadow-lg border border-forest-500' 
-                    : 'text-forest-200 hover:bg-forest-800 hover:text-white'}
+                  ${isActive
+                    ? 'text-white'
+                    : 'text-white/60 hover:text-white hover:bg-white/5'}
                 `}
+                style={isActive ? { background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.12)' } : {}}
               >
                 <Icon className={`w-5 h-5 mr-3 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
                 <span className="font-medium">{item.label}</span>
@@ -88,8 +90,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobileOpen, 
           })}
         </nav>
 
-        <div className="p-4 border-t border-forest-800">
-          <div className="bg-forest-800/50 rounded-xl p-4 backdrop-blur-sm">
+        <div className="p-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
+          <div className="rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
             <div className="flex items-center mb-2">
                 <Sprout className="w-4 h-4 text-forest-300 mr-2" />
                 <h4 className="text-sm font-semibold text-forest-200">Did you know?</h4>
