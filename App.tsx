@@ -10,6 +10,14 @@ import { parseBiomassDensity, parseGrowthCoefficients, parseRegionalInfo } from 
 import { buildSpeciesCatalog, loadSpeciesImageMap } from './services/speciesCatalog';
 import { Menu, Loader2, AlertTriangle } from 'lucide-react';
 
+const STORAGE_KEY = 'treecarbonxray_v1';
+
+interface StoredState {
+  projectTrees: ProjectTree[];
+  horizon: number;
+  selectedRegion: string;
+}
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabView>('builder');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,6 +35,35 @@ const App: React.FC = () => {
   
   // Project State (The User's Inventory)
   const [projectTrees, setProjectTrees] = useState<ProjectTree[]>([]);
+  const [horizon, setHorizon] = useState<number>(20);
+
+  // Restore persisted project state on first load
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed: StoredState = JSON.parse(saved);
+        if (Array.isArray(parsed.projectTrees)) setProjectTrees(parsed.projectTrees);
+        if (typeof parsed.horizon === 'number') setHorizon(parsed.horizon);
+        if (typeof parsed.selectedRegion === 'string') setSelectedRegion(parsed.selectedRegion);
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save project state to localStorage (debounced 500ms)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      try {
+        const toSave: StoredState = { projectTrees, horizon, selectedRegion };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      } catch {
+        // Storage quota exceeded — skip silently
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [projectTrees, horizon, selectedRegion]);
 
   // Load Data on Mount
   useEffect(() => {
@@ -124,12 +161,14 @@ const App: React.FC = () => {
             regions={regions}
             selectedRegion={selectedRegion}
             setSelectedRegion={setSelectedRegion}
+            horizon={horizon}
+            setHorizon={setHorizon}
           />
         );
       case 'dashboard':
         return (
-          <Dashboard 
-            projectTrees={projectTrees} 
+          <Dashboard
+            projectTrees={projectTrees}
             switchToBuilder={() => setActiveTab('builder')}
           />
         );
@@ -147,6 +186,8 @@ const App: React.FC = () => {
             regions={regions}
             selectedRegion={selectedRegion}
             setSelectedRegion={setSelectedRegion}
+            horizon={horizon}
+            setHorizon={setHorizon}
           />
         );
     }
@@ -172,13 +213,27 @@ const App: React.FC = () => {
         {/* Header */}
         <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
           <div className="flex items-center">
-            <button 
+            <button
               onClick={() => setMobileOpen(true)}
               className="lg:hidden mr-4 text-gray-500 hover:text-gray-700"
             >
               <Menu />
             </button>
             <h1 className="text-xl font-bold text-gray-800">{getTitle()}</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            {projectTrees.length > 0 && (
+              <button
+                onClick={() => {
+                  if (confirm('Clear all trees from this project?')) {
+                    setProjectTrees([]);
+                  }
+                }}
+                className="text-sm text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50"
+              >
+                Clear Project
+              </button>
+            )}
           </div>
         </header>
 

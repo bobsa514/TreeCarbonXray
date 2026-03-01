@@ -16,6 +16,8 @@ interface CalculatorProps {
   regions: RegionOption[];
   selectedRegion: string;
   setSelectedRegion: (region: string) => void;
+  horizon: number;
+  setHorizon: (horizon: number) => void;
 }
 
 const Calculator: React.FC<CalculatorProps> = ({
@@ -28,9 +30,9 @@ const Calculator: React.FC<CalculatorProps> = ({
   regions,
   selectedRegion,
   setSelectedRegion,
+  horizon,
+  setHorizon,
 }) => {
-  // Global Config
-  const [horizon, setHorizon] = useState<number>(20);
 
   // Input State
   const [speciesSearch, setSpeciesSearch] = useState('');
