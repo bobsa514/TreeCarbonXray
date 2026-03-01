@@ -58,27 +58,44 @@ export const forecastTreeGrowth = (
     initialDbh: number,
     horizonYears: number,
     densities: BiomassDensity[],
-    growthCoeffs: GrowthCoefficient[]
+    growthCoeffs: GrowthCoefficient[],
+    regionCode?: string
 ): { annualData: AnnualGrowth[], currentCarbon: number } => {
     
     // A. Identify Species & Coefficients
-    // Try to match exact scientific or common name in TS6
-    const speciesCoeffs = growthCoeffs.filter(g => 
-        g.scientificName.toLowerCase().includes(speciesName.toLowerCase()) || 
-        speciesName.toLowerCase().includes(g.scientificName.toLowerCase())
-    );
+    // Priority: exact scientific name in region → exact globally → genus match in region → genus globally → Acer rubrum proxy
+    const scientificLower = speciesName.toLowerCase().trim();
+    const genus = scientificLower.split(' ')[0];
 
-    // Find density
-    const densObj = densities.find(d => 
-        d.commonName.toLowerCase().includes(speciesName.toLowerCase()) || 
-        d.scientificName.toLowerCase().includes(speciesName.toLowerCase())
-    );
-    const density = densObj ? densObj.density : 550; // Default density
+    const filterByRegion = (coeffs: GrowthCoefficient[], code?: string): GrowthCoefficient[] =>
+        code ? coeffs.filter(g => g.region === code) : coeffs;
 
-    // Fallback: If no growth coefficients found for species, use 'Acer rubrum' as a generic proxy
-    // or a "General Broadleaf" proxy if we had one.
-    const proxyName = speciesCoeffs.length > 0 ? speciesName : "Acer rubrum";
-    const activeCoeffs = speciesCoeffs.length > 0 ? speciesCoeffs : growthCoeffs.filter(g => g.scientificName === "Acer rubrum");
+    const matchExact = (pool: GrowthCoefficient[]): GrowthCoefficient[] =>
+        pool.filter(g => g.scientificName.toLowerCase().trim() === scientificLower);
+
+    const matchGenus = (pool: GrowthCoefficient[]): GrowthCoefficient[] =>
+        genus.length > 3
+            ? pool.filter(g => g.scientificName.toLowerCase().startsWith(genus + ' '))
+            : [];
+
+    const regionalPool = filterByRegion(growthCoeffs, regionCode);
+    const speciesCoeffs =
+        matchExact(regionalPool).length > 0 ? matchExact(regionalPool) :
+        matchExact(growthCoeffs).length > 0 ? matchExact(growthCoeffs) :
+        matchGenus(regionalPool).length > 0 ? matchGenus(regionalPool) :
+        matchGenus(growthCoeffs).length > 0 ? matchGenus(growthCoeffs) : [];
+
+    const activeCoeffs = speciesCoeffs.length > 0
+        ? speciesCoeffs
+        : growthCoeffs.filter(g => g.scientificName === "Acer rubrum");
+
+    // Find biomass density — exact match preferred, then genus, then default
+    const densObj = densities.find(d =>
+        d.scientificName.toLowerCase().trim() === scientificLower
+    ) || densities.find(d =>
+        genus.length > 3 && d.scientificName.toLowerCase().startsWith(genus + ' ')
+    );
+    const density = densObj ? densObj.density : 550; // Default density kg/m³
 
     // B. Determine Current Age from DBH
     // Look for Eq: Dependent=age, Independent=dbh
