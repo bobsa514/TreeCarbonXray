@@ -5,20 +5,22 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test:smoke": "tsx scripts/qa-smoke.ts",
     "build": "vite build",
     "preview": "vite preview",
     "images:enrich": "node scripts/enrich-species-images.mjs --write",
     "images:enrich:dry": "node scripts/enrich-species-images.mjs"
   },
   "dependencies": {
+    "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "recharts": "^3.4.1",
-    "lucide-react": "^0.554.0"
+    "recharts": "^3.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

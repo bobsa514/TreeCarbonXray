@@ -14,6 +14,9 @@ Tree Carbon Xray lets you inventory trees, apply US Forest Service growth coeffi
 2. Start the dev server: `npm run dev`
 3. Open the printed localhost URL to use the app.
 
+## Validation
+- Run parser + forecast smoke checks: `npm run test:smoke`
+
 ## Key concepts
 - **Species data** comes from the USFS i-Tree biomass density (TS9) and growth coefficients (TS6). If a species lacks coefficients, the model falls back to `Acer rubrum` as a proxy.
 - **Data resilience:** TS1/TS6/TS9 load network-first from GitHub raw URLs with in-app local CSV fallback if remote fetch fails.

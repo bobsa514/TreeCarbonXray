@@ -166,3 +166,8 @@ AnnualGrowth {
 ```
 
 ⚠️ Note: `currentCarbon` is total for the group; `carbonStorage` is per tree. Dashboard accounts for this: `projectedTotal = forecastData[n].carbonStorage × count`.
+
+## CI Quality Gate
+- Workflow: `.github/workflows/deploy.yml`
+- Steps: `npm ci` → `npm run test:smoke` → `npm run build` → deploy
+- Smoke script: `scripts/qa-smoke.ts`
