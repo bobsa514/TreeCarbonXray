@@ -203,8 +203,8 @@ const Calculator: React.FC<CalculatorProps> = ({
       </div>
 
       {/* Global Parameters */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center space-x-6">
-         <div className="p-3 bg-blue-50 rounded-full text-blue-600">
+      <div className="bg-cream-50 p-6 rounded-xl border border-sage-200/60 flex items-center space-x-6">
+         <div className="p-3 bg-forest-100 rounded-full text-forest-600">
             <Clock className="w-6 h-6" />
          </div>
          <div className="flex-1">
@@ -258,8 +258,8 @@ const Calculator: React.FC<CalculatorProps> = ({
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Left Column: Input Form */}
         <div className="xl:col-span-1">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-6">
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+          <div className="bg-white rounded-xl shadow-sm border border-sage-200/50 overflow-hidden sticky top-6">
+            <div className="bg-forest-50 px-6 py-4 border-b border-forest-100">
               <h3 className="font-semibold text-gray-800 flex items-center">
                 <Plus className="w-4 h-4 mr-2 text-forest-600" />
                 Add Inventory
@@ -369,7 +369,7 @@ const Calculator: React.FC<CalculatorProps> = ({
               <button 
                 type="submit" 
                 disabled={!speciesSearch || !dbh || parseFloat(dbh) <= 0}
-                className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform active:scale-[0.98]"
+                className="w-full bg-forest-700 text-white py-3 rounded-lg font-semibold hover:bg-forest-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform active:scale-[0.98]"
               >
                 Add to Inventory
               </button>
@@ -388,10 +388,10 @@ const Calculator: React.FC<CalculatorProps> = ({
                <p className="max-w-md mx-auto text-sm">Search for a species and input current size. The model will calculate current carbon storage and forecast growth for the next {horizon} years.</p>
              </div>
            ) : (
-             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+             <div className="bg-white rounded-xl shadow-sm border border-sage-200/40 overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+                    <thead className="bg-forest-50 border-b border-forest-100">
                       <tr>
                         <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
                         <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Species</th>
@@ -448,7 +448,7 @@ const Calculator: React.FC<CalculatorProps> = ({
                           );
                       })}
                     </tbody>
-                    <tfoot className="bg-gray-50 border-t border-gray-200">
+                    <tfoot className="bg-forest-50 border-t border-forest-100">
                         <tr>
                             <td colSpan={4} className="px-6 py-4 text-sm font-semibold text-gray-700 text-right">Project Lifetime Total ({horizon} Years):</td>
                             <td className="px-6 py-4 text-right">
