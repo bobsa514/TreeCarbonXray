@@ -50,6 +50,8 @@ export interface GrowthCoefficient {
   mse?: number; // For log corrections
 }
 
+export type ModelConfidence = 'exact' | 'genus' | 'proxy';
+
 export interface AnnualGrowth {
   yearOffset: number;
   age: number;
@@ -64,6 +66,8 @@ export interface ProjectTree {
   count: number;
   speciesCommon: string;
   speciesScientific: string;
+  modelConfidence: ModelConfidence;
+  modelSourceScientific: string;
   initialDbh: number;
   initialHeight: number;
   currentCarbon: number; // kg (at year 0)

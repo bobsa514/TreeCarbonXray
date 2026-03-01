@@ -1,4 +1,4 @@
-import { AnnualGrowth, BiomassDensity, GrowthCoefficient, ProjectTree } from "../types";
+import { AnnualGrowth, BiomassDensity, GrowthCoefficient, ModelConfidence } from "../types";
 
 // --- MATH ENGINE ---
 
@@ -53,6 +53,13 @@ const calculateCarbonPoint = (dbhCm: number, heightM: number, density: number): 
 };
 
 // 2. Main Forecasting Function
+export interface ForecastTreeGrowthResult {
+    annualData: AnnualGrowth[];
+    currentCarbon: number;
+    modelConfidence: ModelConfidence;
+    modelSourceScientific: string;
+}
+
 export const forecastTreeGrowth = (
     speciesName: string,
     initialDbh: number,
@@ -60,7 +67,7 @@ export const forecastTreeGrowth = (
     densities: BiomassDensity[],
     growthCoeffs: GrowthCoefficient[],
     regionCode?: string
-): { annualData: AnnualGrowth[], currentCarbon: number } => {
+): ForecastTreeGrowthResult => {
     
     // A. Identify Species & Coefficients
     // Priority: exact scientific name in region → exact globally → genus match in region → genus globally → Acer rubrum proxy
@@ -79,15 +86,33 @@ export const forecastTreeGrowth = (
             : [];
 
     const regionalPool = filterByRegion(growthCoeffs, regionCode);
-    const speciesCoeffs =
-        matchExact(regionalPool).length > 0 ? matchExact(regionalPool) :
-        matchExact(growthCoeffs).length > 0 ? matchExact(growthCoeffs) :
-        matchGenus(regionalPool).length > 0 ? matchGenus(regionalPool) :
-        matchGenus(growthCoeffs).length > 0 ? matchGenus(growthCoeffs) : [];
+    const exactRegional = matchExact(regionalPool);
+    const exactGlobal = matchExact(growthCoeffs);
+    const genusRegional = matchGenus(regionalPool);
+    const genusGlobal = matchGenus(growthCoeffs);
 
+    let speciesCoeffs: GrowthCoefficient[] = [];
+    let modelConfidence: ModelConfidence = 'proxy';
+
+    if (exactRegional.length > 0) {
+        speciesCoeffs = exactRegional;
+        modelConfidence = 'exact';
+    } else if (exactGlobal.length > 0) {
+        speciesCoeffs = exactGlobal;
+        modelConfidence = 'exact';
+    } else if (genusRegional.length > 0) {
+        speciesCoeffs = genusRegional;
+        modelConfidence = 'genus';
+    } else if (genusGlobal.length > 0) {
+        speciesCoeffs = genusGlobal;
+        modelConfidence = 'genus';
+    }
+
+    const proxyScientific = "Acer rubrum";
     const activeCoeffs = speciesCoeffs.length > 0
         ? speciesCoeffs
-        : growthCoeffs.filter(g => g.scientificName === "Acer rubrum");
+        : growthCoeffs.filter(g => g.scientificName === proxyScientific);
+    const modelSourceScientific = activeCoeffs[0]?.scientificName || proxyScientific;
 
     // Find biomass density — exact match preferred, then genus, then default
     const densObj = densities.find(d =>
@@ -170,5 +195,10 @@ export const forecastTreeGrowth = (
         if(y > 0) previousTotalCarbon = totalCarbon;
     }
 
-    return { annualData, currentCarbon };
+    return {
+        annualData,
+        currentCarbon,
+        modelConfidence,
+        modelSourceScientific
+    };
 };

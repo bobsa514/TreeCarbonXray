@@ -44,6 +44,16 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
       return Object.keys(dist).map(k => ({ name: k, value: dist[k] }));
   }, [projectTrees]);
 
+  const confidenceDist = useMemo(() => {
+    const totals = { exact: 0, genus: 0, proxy: 0 };
+    projectTrees.forEach((t) => {
+      if (t.modelConfidence === 'exact') totals.exact += t.count;
+      else if (t.modelConfidence === 'genus') totals.genus += t.count;
+      else totals.proxy += t.count;
+    });
+    return totals;
+  }, [projectTrees]);
+
   const COLORS = ['#2e9e5e', '#5e825e', '#98776a', '#4db87a', '#163f28', '#826057'];
 
   if (!stats || projectTrees.length === 0) {
@@ -79,7 +89,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
           </p>
         </div>
       </div>
-    <div className="space-y-8 animate-fade-in">
+      <div className="space-y-8 animate-fade-in">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
         <div>
@@ -99,6 +109,21 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
             {stats.totalTrees} Trees in Inventory
           </div>
         </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-wrap items-center gap-2">
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 mr-1">
+          Model Confidence
+        </span>
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+          Exact: {confidenceDist.exact}
+        </span>
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+          Genus: {confidenceDist.genus}
+        </span>
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+          Proxy: {confidenceDist.proxy}
+        </span>
       </div>
 
       {/* Main Impact Cards */}

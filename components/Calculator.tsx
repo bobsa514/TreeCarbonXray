@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from '../types';
+import { BiomassDensity, ModelConfidence, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from '../types';
 import { forecastTreeGrowth } from '../services/carbonCalculator';
 import SpeciesSelectorModal from './SpeciesSelectorModal';
 import { getSpeciesLabel } from '../services/speciesCatalog';
@@ -51,6 +51,12 @@ const Calculator: React.FC<CalculatorProps> = ({
 
   const prevHorizonRef = React.useRef(horizon);
 
+  const confidenceBadgeClass = (confidence: ModelConfidence): string => {
+    if (confidence === 'exact') return 'bg-green-100 text-green-800 border-green-200';
+    if (confidence === 'genus') return 'bg-amber-100 text-amber-800 border-amber-200';
+    return 'bg-red-100 text-red-800 border-red-200';
+  };
+
   // Filter species for autocomplete using the dynamic list
   const filteredSpecies = useMemo(() => {
     if (!speciesSearch) return speciesList.slice(0, 8);
@@ -69,7 +75,7 @@ const Calculator: React.FC<CalculatorProps> = ({
     prevHorizonRef.current = horizon;
     if (projectTreesRef.current.length === 0) return;
     const updated = projectTreesRef.current.map(tree => {
-      const { annualData, currentCarbon } = forecastTreeGrowth(
+      const { annualData, currentCarbon, modelConfidence, modelSourceScientific } = forecastTreeGrowth(
         tree.speciesScientific,
         tree.initialDbh,
         horizon,
@@ -79,6 +85,8 @@ const Calculator: React.FC<CalculatorProps> = ({
       );
       return {
         ...tree,
+        modelConfidence,
+        modelSourceScientific,
         forecastData: annualData,
         initialHeight: annualData[0]?.height ?? tree.initialHeight,
         currentCarbon: currentCarbon * tree.count,
@@ -93,7 +101,7 @@ const Calculator: React.FC<CalculatorProps> = ({
     prevRegionRef.current = selectedRegion;
     if (projectTreesRef.current.length === 0) return;
     const updated = projectTreesRef.current.map(tree => {
-      const { annualData, currentCarbon } = forecastTreeGrowth(
+      const { annualData, currentCarbon, modelConfidence, modelSourceScientific } = forecastTreeGrowth(
         tree.speciesScientific,
         tree.initialDbh,
         horizon,
@@ -103,6 +111,8 @@ const Calculator: React.FC<CalculatorProps> = ({
       );
       return {
         ...tree,
+        modelConfidence,
+        modelSourceScientific,
         forecastData: annualData,
         initialHeight: annualData[0]?.height ?? tree.initialHeight,
         currentCarbon: currentCarbon * tree.count,
@@ -150,7 +160,7 @@ const Calculator: React.FC<CalculatorProps> = ({
     }
 
     // Run Forecast
-    const { annualData, currentCarbon } = forecastTreeGrowth(
+    const { annualData, currentCarbon, modelConfidence, modelSourceScientific } = forecastTreeGrowth(
         scientific,
         dbhVal,
         horizon,
@@ -164,6 +174,8 @@ const Calculator: React.FC<CalculatorProps> = ({
       count: count,
       speciesCommon: common,
       speciesScientific: scientific,
+      modelConfidence,
+      modelSourceScientific,
       initialDbh: dbhVal,
       initialHeight: annualData[0].height,
       currentCarbon: currentCarbon * count,
@@ -439,6 +451,18 @@ const Calculator: React.FC<CalculatorProps> = ({
                               <td className="px-6 py-4">
                                 <div className="font-medium text-gray-900">{tree.speciesCommon}</div>
                                 <div className="text-xs text-gray-500 italic">{tree.speciesScientific}</div>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                  <span
+                                    className={`inline-flex items-center border px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${confidenceBadgeClass(tree.modelConfidence)}`}
+                                  >
+                                    {tree.modelConfidence}
+                                  </span>
+                                  {tree.modelConfidence !== 'exact' && (
+                                    <span className="text-[10px] text-gray-500">
+                                      model: {tree.modelSourceScientific}
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-600">
                                 <div className="flex items-center gap-2">

@@ -28,7 +28,7 @@ App.tsx
 └── main
     ├── Calculator.tsx (builder tab)
     │   └── SpeciesSelectorModal.tsx
-    ├── Dashboard.tsx (impact report tab)
+├── Dashboard.tsx (impact report tab + model confidence summary)
     └── Analytics.tsx (charts tab)
 ```
 
@@ -43,6 +43,8 @@ Priority order (exact → genus → proxy):
 3. Genus prefix (first word) in region
 4. Genus prefix globally
 5. Acer rubrum proxy
+
+`forecastTreeGrowth()` returns `modelConfidence` and `modelSourceScientific` so UI can display estimate quality.
 
 ### Step 2: Density Lookup (TS9)
 Exact scientific name → genus prefix → default 550 kg/m³.
@@ -138,6 +140,8 @@ ProjectTree {
   count: number                  // quantity of identical trees
   speciesCommon: string
   speciesScientific: string
+  modelConfidence: 'exact' | 'genus' | 'proxy'
+  modelSourceScientific: string  // species used for active coefficient set
   initialDbh: number             // cm at time of entry
   initialHeight: number          // m, estimated from DBH
   currentCarbon: number          // kg CO₂e — GROUP TOTAL (× count)

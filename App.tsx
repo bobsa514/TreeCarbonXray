@@ -80,7 +80,7 @@ const App: React.FC = () => {
     if (!needsReconcile || densities.length === 0 || growthCoeffs.length === 0) return;
     setNeedsReconcile(false);
     setProjectTrees(prev => prev.map(tree => {
-      const { annualData, currentCarbon } = forecastTreeGrowth(
+      const { annualData, currentCarbon, modelConfidence, modelSourceScientific } = forecastTreeGrowth(
         tree.speciesScientific,
         tree.initialDbh,
         horizon,
@@ -90,6 +90,8 @@ const App: React.FC = () => {
       );
       return {
         ...tree,
+        modelConfidence,
+        modelSourceScientific,
         forecastData: annualData,
         initialHeight: annualData[0]?.height ?? tree.initialHeight,
         currentCarbon: currentCarbon * tree.count

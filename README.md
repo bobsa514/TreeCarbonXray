@@ -5,6 +5,7 @@ Tree Carbon Xray lets you inventory trees, apply US Forest Service growth coeffi
 ## What it does
 - Build an inventory with quantities, DBH, and species (autocomplete or browse picker with photos).
 - Run carbon and growth projections over a selectable planning horizon.
+- See model confidence per entry (`exact`, `genus`, `proxy`) to understand estimate quality.
 - View carbon totals, growth deltas, species composition, and equivalencies (vehicles, gasoline).
 - Explore analytics with cumulative sequestration and species breakdown charts.
 
@@ -15,6 +16,7 @@ Tree Carbon Xray lets you inventory trees, apply US Forest Service growth coeffi
 
 ## Key concepts
 - **Species data** comes from the USFS i-Tree biomass density (TS9) and growth coefficients (TS6). If a species lacks coefficients, the model falls back to `Acer rubrum` as a proxy.
+- **Confidence labels:** each inventory row records how coefficients were sourced: exact species match, genus-level match, or proxy fallback.
 - **Inputs:** quantity, species, and current DBH (cm). Height is estimated from DBH.
 - **Outputs:** projected DBH/height, carbon storage (kg CO₂), and annual sequestration per species group and project totals.
 
