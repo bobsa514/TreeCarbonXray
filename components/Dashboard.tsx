@@ -43,13 +43,13 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
       return Object.keys(dist).map(k => ({ name: k, value: dist[k] }));
   }, [projectTrees]);
 
-  const COLORS = ['#39a872', '#60c68f', '#96deb3', '#c3eed2', '#298759', '#1f563d'];
+  const COLORS = ['#2e9e5e', '#5e825e', '#98776a', '#4db87a', '#163f28', '#826057'];
 
   if (!stats || projectTrees.length === 0) {
       return (
           <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-              <div className="bg-gray-100 p-6 rounded-full mb-6">
-                  <Trees className="w-12 h-12 text-gray-400" />
+              <div className="bg-forest-100 p-6 rounded-full mb-6">
+                  <Trees className="w-12 h-12 text-forest-400" />
               </div>
               <h2 className="text-2xl font-bold text-gray-800 mb-2">No Project Data Available</h2>
               <p className="text-gray-500 max-w-md mb-8">Start by adding trees to your project inventory to generate an impact report.</p>
@@ -103,8 +103,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
       {/* Main Impact Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* CO2 Primary Card */}
-        <div className="bg-gradient-to-br from-forest-800 to-forest-900 rounded-2xl p-8 text-white shadow-xl md:col-span-2 relative overflow-hidden">
+        <div className="rounded-2xl p-8 text-white shadow-xl md:col-span-2 relative overflow-hidden"
+             style={{ background: 'linear-gradient(135deg, #163f28 0%, #0d2619 60%, #1d3a20 100%)' }}>
             <div className="absolute top-0 right-0 -mt-8 -mr-8 w-48 h-48 bg-forest-700 rounded-full opacity-50 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-40 h-40 rounded-full blur-2xl" style={{ background: 'rgba(46,158,94,0.2)' }}></div>
             
             <div className="relative z-10">
                 <div className="flex items-center space-x-3 mb-4 opacity-90">
@@ -193,7 +195,8 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
         </div>
 
         {/* Additional Context */}
-        <div className="lg:col-span-2 bg-forest-50 rounded-2xl p-8 border border-forest-100 flex flex-col justify-between">
+        <div className="lg:col-span-2 rounded-2xl p-8 flex flex-col justify-between"
+             style={{ background: 'linear-gradient(135deg, #f0faf3 0%, #e6ede6 100%)', border: '1px solid #b4e6c5' }}>
             <div>
                 <h3 className="text-xl font-bold text-forest-900 mb-2">Growth & Yield Analysis</h3>
                 <p className="text-forest-700 leading-relaxed">
