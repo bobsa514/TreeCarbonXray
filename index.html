@@ -4,33 +4,64 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Tree Carbon Xray</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      tailwind.config = {
+    tailwind.config = {
         theme: {
-          extend: {
-            colors: {
-              forest: {
-                50: '#f2fcf5',
-                100: '#e1f8e8',
-                200: '#c3eed2',
-                300: '#96deb3',
-                400: '#60c68f',
-                500: '#39a872',
-                600: '#298759',
-                700: '#236c49',
-                800: '#1f563d',
-                900: '#1a4733',
-              },
-              earth: {
-                500: '#8c6b5d',
-                600: '#755548',
-                700: '#5e4339',
-              }
+            extend: {
+                colors: {
+                    forest: {
+                        50:  '#f0faf3',
+                        100: '#d8f3e1',
+                        200: '#b4e6c5',
+                        300: '#80d1a0',
+                        400: '#4db87a',
+                        500: '#2e9e5e',
+                        600: '#22804b',
+                        700: '#1d673d',
+                        800: '#1a5232',
+                        900: '#163f28',
+                        950: '#0d2619',
+                    },
+                    sage: {
+                        50:  '#f4f7f4',
+                        100: '#e6ede6',
+                        200: '#cedbce',
+                        300: '#a8c0a8',
+                        400: '#7fa07f',
+                        500: '#5e825e',
+                        600: '#49694a',
+                        700: '#3b543c',
+                        800: '#314432',
+                        900: '#2a3a2b',
+                    },
+                    bark: {
+                        50:  '#faf7f5',
+                        100: '#f0ebe6',
+                        200: '#dfd3ca',
+                        300: '#c8b4a5',
+                        400: '#ad9080',
+                        500: '#98776a',
+                        600: '#826057',
+                        700: '#6b4f47',
+                        800: '#59423e',
+                        900: '#4c3936',
+                    },
+                    cream: {
+                        50:  '#fdfbf7',
+                        100: '#f9f5ec',
+                        200: '#f2eadb',
+                    }
+                },
+                fontFamily: {
+                    sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                },
             }
-          }
         }
-      }
+    }
     </script>
     <style>
       @media print {
@@ -58,7 +89,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-50 text-slate-800 antialiased">
+  <body class="bg-cream-100 text-slate-800 antialiased font-sans">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
