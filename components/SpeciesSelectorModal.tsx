@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SpeciesInfo } from '../types';
 import { FALLBACK_IMAGE, getSpeciesLabel } from '../services/speciesCatalog';
 import { Search, X } from 'lucide-react';
@@ -17,6 +17,10 @@ const SpeciesSelectorModal: React.FC<SpeciesSelectorModalProps> = ({
   species,
 }) => {
   const [query, setQuery] = useState('');
+
+  useEffect(() => {
+    if (open) setQuery('');
+  }, [open]);
 
   const filteredSpecies = useMemo(() => {
     if (!query) return species;
