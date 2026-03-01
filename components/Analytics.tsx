@@ -109,8 +109,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
                         >
                             <defs>
                                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#39a872" stopOpacity={0.8}/>
-                                    <stop offset="95%" stopColor="#39a872" stopOpacity={0}/>
+                                    <stop offset="5%" stopColor="#2e9e5e" stopOpacity={0.85}/>
+                                    <stop offset="95%" stopColor="#2e9e5e" stopOpacity={0.02}/>
                                 </linearGradient>
                             </defs>
                             <XAxis 
@@ -129,7 +129,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
                             />
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <Tooltip contentStyle={{borderRadius: '8px'}} />
-                            <Area type="monotone" dataKey="total" stroke="#298759" fillOpacity={1} fill="url(#colorTotal)" />
+                            <Area type="monotone" dataKey="total" stroke="#1d673d" strokeWidth={2} fillOpacity={1} fill="url(#colorTotal)" />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
@@ -197,7 +197,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
                                     cursor={{fill: '#f9fafb'}}
                                     contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
                                 />
-                                <Bar dataKey="co2" fill="#39a872" name="Lifetime CO₂ (kg)" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="co2" fill="#2e9e5e" name="Lifetime CO₂ (kg)" radius={[4, 4, 0, 0]} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -232,7 +232,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
                         />
                         <ZAxis type="number" dataKey="amt" range={[60, 400]} name="Count" />
                                     <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{borderRadius: '8px'}} />
-                                    <Scatter name="Trees" data={scatterData} fill="#8884d8" fillOpacity={0.6} stroke="#8884d8" />
+                                    <Scatter name="Trees" data={scatterData} fill="#5e825e" fillOpacity={0.65} stroke="#3b543c" />
                                 </ScatterChart>
                             </ResponsiveContainer>
                         </div>
