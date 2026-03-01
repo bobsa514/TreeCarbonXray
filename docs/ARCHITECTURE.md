@@ -37,6 +37,8 @@ App.tsx
     └── Analytics.tsx (charts tab)
 ```
 
+`Calculator`, `Dashboard`, and `Analytics` are loaded with `React.lazy` + `Suspense` to keep initial bundle smaller.
+
 ## Carbon Calculation Methodology
 
 All math is in `services/carbonCalculator.ts`. Entry: `forecastTreeGrowth(speciesName, initialDbh, horizonYears, densities, growthCoeffs, regionCode?)`.

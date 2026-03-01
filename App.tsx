@@ -1,9 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import Dashboard from './components/Dashboard';
-import Calculator from './components/Calculator';
-import Analytics from './components/Analytics';
 import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from './types';
 import { DATA_URLS } from './constants';
 import { parseBiomassDensity, parseGrowthCoefficients, parseRegionalInfo } from './services/dataService';
@@ -17,6 +14,10 @@ const FALLBACK_DATA_URLS = {
   TS6_GROWTH_COEFFICIENTS: new URL('./Data/TS6_Growth_coefficients.csv', import.meta.url).href,
   TS9_BIOMASS_DENSITY: new URL('./Data/TS9_Biomass_density_factors.csv', import.meta.url).href,
 };
+
+const Calculator = lazy(() => import('./components/Calculator'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Analytics = lazy(() => import('./components/Analytics'));
 
 interface StoredState {
   projectTrees: ProjectTree[];
@@ -218,47 +219,64 @@ const App: React.FC = () => {
     switch(activeTab) {
       case 'builder':
         return (
-          <Calculator
-            densities={densities}
-            growthCoeffs={growthCoeffs}
-            projectTrees={projectTrees}
-            setProjectTrees={setProjectTrees}
-            switchToDashboard={() => setActiveTab('dashboard')}
-            speciesList={speciesList}
-            regions={regions}
-            selectedRegion={selectedRegion}
-            setSelectedRegion={setSelectedRegion}
-            horizon={horizon}
-            setHorizon={setHorizon}
-          />
+          <Suspense fallback={<TabLoader />}>
+            <Calculator
+              densities={densities}
+              growthCoeffs={growthCoeffs}
+              projectTrees={projectTrees}
+              setProjectTrees={setProjectTrees}
+              switchToDashboard={() => setActiveTab('dashboard')}
+              speciesList={speciesList}
+              regions={regions}
+              selectedRegion={selectedRegion}
+              setSelectedRegion={setSelectedRegion}
+              horizon={horizon}
+              setHorizon={setHorizon}
+            />
+          </Suspense>
         );
       case 'dashboard':
         return (
-          <Dashboard
-            projectTrees={projectTrees}
-            switchToBuilder={() => setActiveTab('builder')}
-          />
+          <Suspense fallback={<TabLoader />}>
+            <Dashboard
+              projectTrees={projectTrees}
+              switchToBuilder={() => setActiveTab('builder')}
+            />
+          </Suspense>
         );
       case 'analytics':
-        return <Analytics projectTrees={projectTrees} />;
+        return (
+          <Suspense fallback={<TabLoader />}>
+            <Analytics projectTrees={projectTrees} />
+          </Suspense>
+        );
       default:
         return (
-          <Calculator
-            densities={densities}
-            growthCoeffs={growthCoeffs}
-            projectTrees={projectTrees}
-            setProjectTrees={setProjectTrees}
-            switchToDashboard={() => setActiveTab('dashboard')}
-            speciesList={speciesList}
-            regions={regions}
-            selectedRegion={selectedRegion}
-            setSelectedRegion={setSelectedRegion}
-            horizon={horizon}
-            setHorizon={setHorizon}
-          />
+          <Suspense fallback={<TabLoader />}>
+            <Calculator
+              densities={densities}
+              growthCoeffs={growthCoeffs}
+              projectTrees={projectTrees}
+              setProjectTrees={setProjectTrees}
+              switchToDashboard={() => setActiveTab('dashboard')}
+              speciesList={speciesList}
+              regions={regions}
+              selectedRegion={selectedRegion}
+              setSelectedRegion={setSelectedRegion}
+              horizon={horizon}
+              setHorizon={setHorizon}
+            />
+          </Suspense>
         );
     }
   };
+
+  const TabLoader: React.FC = () => (
+    <div className="flex flex-col items-center justify-center h-[50vh]">
+      <Loader2 className="w-10 h-10 text-forest-600 animate-spin mb-3" />
+      <p className="text-sm text-gray-500">Loading view...</p>
+    </div>
+  );
 
   const getTitle = () => {
       if (activeTab === 'builder') return 'Inventory & Forecast';

@@ -34,3 +34,4 @@ Tree Carbon Xray lets you inventory trees, apply US Forest Service growth coeffi
 - The species picker shows common + scientific names and uses Wikimedia/Unsplash image links per species, falling back to a generic tree photo if a specific image is unavailable.
 - Network access is needed on first load to download the USFS CSVs (TS6/TS9) and species images.
 - To enrich missing species photos in `public/species-images.yaml`, run `npm run images:enrich` (see `docs/SPECIES_IMAGES.md`).
+- Main tabs are code-split with `React.lazy` to reduce initial JS cost; chart-heavy views load on demand.
