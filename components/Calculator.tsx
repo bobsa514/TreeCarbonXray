@@ -1,10 +1,10 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo } from '../types';
+import { BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from '../types';
 import { forecastTreeGrowth } from '../services/carbonCalculator';
 import SpeciesSelectorModal from './SpeciesSelectorModal';
 import { getSpeciesLabel } from '../services/speciesCatalog';
-import { Plus, Trash2, Leaf, Search, AlertCircle, ArrowRight, Clock, Info, Wand2 } from 'lucide-react';
+import { Plus, Trash2, Leaf, Search, AlertCircle, ArrowRight, Clock, Info, Wand2, MapPin } from 'lucide-react';
 
 interface CalculatorProps {
   densities: BiomassDensity[];
@@ -13,15 +13,21 @@ interface CalculatorProps {
   setProjectTrees: React.Dispatch<React.SetStateAction<ProjectTree[]>>;
   switchToDashboard: () => void;
   speciesList: SpeciesInfo[];
+  regions: RegionOption[];
+  selectedRegion: string;
+  setSelectedRegion: (region: string) => void;
 }
 
-const Calculator: React.FC<CalculatorProps> = ({ 
-  densities, 
-  growthCoeffs, 
-  projectTrees, 
-  setProjectTrees, 
+const Calculator: React.FC<CalculatorProps> = ({
+  densities,
+  growthCoeffs,
+  projectTrees,
+  setProjectTrees,
   switchToDashboard,
-  speciesList 
+  speciesList,
+  regions,
+  selectedRegion,
+  setSelectedRegion,
 }) => {
   // Global Config
   const [horizon, setHorizon] = useState<number>(20);
@@ -35,6 +41,11 @@ const Calculator: React.FC<CalculatorProps> = ({
 
   const projectTreesRef = React.useRef(projectTrees);
   useEffect(() => { projectTreesRef.current = projectTrees; }, [projectTrees]);
+
+  const selectedRegionRef = React.useRef(selectedRegion);
+  useEffect(() => { selectedRegionRef.current = selectedRegion; }, [selectedRegion]);
+
+  const prevRegionRef = React.useRef(selectedRegion);
 
   const prevHorizonRef = React.useRef(horizon);
 
@@ -61,12 +72,32 @@ const Calculator: React.FC<CalculatorProps> = ({
         tree.initialDbh,
         horizon,
         densities,
-        growthCoeffs
+        growthCoeffs,
+        selectedRegionRef.current || undefined
       );
       return { ...tree, forecastData: annualData };
     });
     setProjectTrees(updated);
   }, [horizon, densities, growthCoeffs, setProjectTrees]);
+
+  // Recalculate all trees when region changes
+  useEffect(() => {
+    if (prevRegionRef.current === selectedRegion) return;
+    prevRegionRef.current = selectedRegion;
+    if (projectTreesRef.current.length === 0) return;
+    const updated = projectTreesRef.current.map(tree => {
+      const { annualData } = forecastTreeGrowth(
+        tree.speciesScientific,
+        tree.initialDbh,
+        horizon,
+        densities,
+        growthCoeffs,
+        selectedRegion || undefined
+      );
+      return { ...tree, forecastData: annualData };
+    });
+    setProjectTrees(updated);
+  }, [selectedRegion, densities, growthCoeffs, horizon, setProjectTrees]);
 
   const findSpeciesFromInput = (): SpeciesInfo | undefined => {
     const needle = speciesSearch.toLowerCase().trim();
@@ -112,7 +143,8 @@ const Calculator: React.FC<CalculatorProps> = ({
         dbhVal,
         horizon,
         densities,
-        growthCoeffs
+        growthCoeffs,
+        selectedRegion || undefined
     );
 
     const newTree: ProjectTree = {
@@ -195,6 +227,30 @@ const Calculator: React.FC<CalculatorProps> = ({
          <div className="hidden md:block text-sm text-gray-500 max-w-xs border-l pl-6">
             Adjusting the horizon recalculates the sequestration potential for the entire project lifecycle.
          </div>
+        {regions.length > 0 && (
+          <div className="hidden md:flex border-l border-gray-200 pl-6 items-center gap-3 flex-shrink-0">
+            <div className="p-3 bg-forest-50 rounded-full text-forest-600">
+              <MapPin className="w-6 h-6" />
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-gray-700 mb-1 block">
+                USFS Region
+              </label>
+              <select
+                value={selectedRegion}
+                onChange={(e) => setSelectedRegion(e.target.value)}
+                className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-forest-500 outline-none bg-white"
+              >
+                <option value="">All Regions (average)</option>
+                {regions.map(r => (
+                  <option key={r.code} value={r.code}>
+                    {r.name} — {r.city}, {r.state}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
