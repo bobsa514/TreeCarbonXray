@@ -32,6 +32,19 @@
         }
       }
     </script>
+    <style>
+      @media print {
+        aside, header, .no-print { display: none !important; }
+        body { background: white !important; }
+        .flex-1.flex.flex-col { width: 100% !important; }
+        main { padding: 0 !important; overflow: visible !important; }
+        .recharts-responsive-container { page-break-inside: avoid; }
+        .print-header { display: block !important; }
+        .print-break { page-break-before: always; }
+        * { box-shadow: none !important; }
+      }
+      .print-header { display: none; }
+    </style>
   <script type="importmap">
 {
   "imports": {

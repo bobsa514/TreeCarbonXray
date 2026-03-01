@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ProjectTree } from '../types';
-import { Car, Cloud, Trees, CheckCircle2, TrendingUp, Leaf } from 'lucide-react';
+import { Car, Cloud, Trees, CheckCircle2, TrendingUp, Leaf, Printer } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface DashboardProps {
@@ -64,6 +64,20 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
   }
 
   return (
+    <>
+      <div className="print-header mb-6 pb-4 border-b border-gray-300">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Tree Carbon Xray — Impact Report</h1>
+            <p className="text-gray-500 text-sm mt-1">
+              Generated: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          </div>
+          <p className="text-xs text-gray-400 text-right max-w-xs">
+            Carbon projections use USFS i-Tree growth coefficients (TS6/TS9).
+          </p>
+        </div>
+      </div>
     <div className="space-y-8 animate-fade-in">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
@@ -71,9 +85,18 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
             <h2 className="text-3xl font-bold text-gray-900">Project Impact Report</h2>
             <p className="text-gray-500 mt-1">Environmental Assessment Summary ({stats.horizon} Year Horizon)</p>
         </div>
-        <div className="mt-4 md:mt-0 bg-green-50 text-green-800 px-4 py-2 rounded-full text-sm font-medium flex items-center border border-green-100">
+        <div className="mt-4 md:mt-0 flex items-center gap-3">
+          <button
+            onClick={() => window.print()}
+            className="no-print flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Printer className="w-4 h-4" />
+            Export / Print
+          </button>
+          <div className="bg-green-50 text-green-800 px-4 py-2 rounded-full text-sm font-medium flex items-center border border-green-100">
             <CheckCircle2 className="w-4 h-4 mr-2" />
             {stats.totalTrees} Trees in Inventory
+          </div>
         </div>
       </div>
 
@@ -194,6 +217,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
         </div>
       </div>
     </div>
+    </>
   );
 };
 
