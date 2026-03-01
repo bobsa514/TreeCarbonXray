@@ -33,6 +33,11 @@ const Calculator: React.FC<CalculatorProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
 
+  const projectTreesRef = React.useRef(projectTrees);
+  useEffect(() => { projectTreesRef.current = projectTrees; }, [projectTrees]);
+
+  const prevHorizonRef = React.useRef(horizon);
+
   // Filter species for autocomplete using the dynamic list
   const filteredSpecies = useMemo(() => {
     if (!speciesSearch) return speciesList.slice(0, 8);
@@ -45,32 +50,37 @@ const Calculator: React.FC<CalculatorProps> = ({
     return matches.slice(0, 10);
   }, [speciesSearch, speciesList]);
 
-  // Update existing trees when Horizon changes
+  // Recalculate all trees only when horizon actually changes (not on every tree add/remove)
   useEffect(() => {
-    if (projectTrees.length > 0) {
-        const updated = projectTrees.map(tree => {
-             const { annualData } = forecastTreeGrowth(
-                tree.speciesScientific, // Pass specific name
-                tree.initialDbh,
-                horizon,
-                densities,
-                growthCoeffs
-            );
-            return { ...tree, forecastData: annualData };
-        });
-        // Only update if data actually changes to prevent loop
-        if (JSON.stringify(updated[0].forecastData.length) !== JSON.stringify(projectTrees[0].forecastData.length)) {
-            setProjectTrees(updated);
-        }
-    }
-  }, [horizon, densities, growthCoeffs, projectTrees, setProjectTrees]); 
+    if (prevHorizonRef.current === horizon) return;
+    prevHorizonRef.current = horizon;
+    if (projectTreesRef.current.length === 0) return;
+    const updated = projectTreesRef.current.map(tree => {
+      const { annualData } = forecastTreeGrowth(
+        tree.speciesScientific,
+        tree.initialDbh,
+        horizon,
+        densities,
+        growthCoeffs
+      );
+      return { ...tree, forecastData: annualData };
+    });
+    setProjectTrees(updated);
+  }, [horizon, densities, growthCoeffs, setProjectTrees]);
 
   const findSpeciesFromInput = (): SpeciesInfo | undefined => {
-    const needle = speciesSearch.toLowerCase();
-    return speciesList.find(
-      (s) =>
-        needle.includes(s.scientificName.toLowerCase()) ||
-        needle.includes(s.commonName.toLowerCase())
+    const needle = speciesSearch.toLowerCase().trim();
+    if (!needle) return undefined;
+    // Exact match first, then partial
+    return (
+      speciesList.find(s =>
+        s.scientificName.toLowerCase() === needle ||
+        s.commonName.toLowerCase() === needle
+      ) ||
+      speciesList.find(s =>
+        s.scientificName.toLowerCase().includes(needle) ||
+        s.commonName.toLowerCase().includes(needle)
+      )
     );
   };
 
@@ -79,6 +89,11 @@ const Calculator: React.FC<CalculatorProps> = ({
     if (!speciesSearch || !dbh) return;
 
     const dbhVal = parseFloat(dbh);
+
+    if (isNaN(dbhVal) || dbhVal <= 0) {
+      alert('Please enter a valid DBH greater than 0 cm.');
+      return;
+    }
 
     const matchedSpecies = findSpeciesFromInput();
 
@@ -277,10 +292,12 @@ const Calculator: React.FC<CalculatorProps> = ({
                   </label>
                   <div className="relative">
                     <input 
-                      type="number" 
+                      type="number"
                       value={dbh}
                       onChange={(e) => setDbh(e.target.value)}
                       placeholder="e.g. 30"
+                      min="0.1"
+                      step="0.1"
                       className="w-full pl-3 pr-8 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                       required
                     />
@@ -293,7 +310,7 @@ const Calculator: React.FC<CalculatorProps> = ({
 
               <button 
                 type="submit" 
-                disabled={!speciesSearch || !dbh}
+                disabled={!speciesSearch || !dbh || parseFloat(dbh) <= 0}
                 className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-black transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform active:scale-[0.98]"
               >
                 Add to Inventory
