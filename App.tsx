@@ -211,7 +211,8 @@ const App: React.FC = () => {
 
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
+        <header className="bg-white h-16 flex items-center justify-between px-6 z-10"
+                style={{ borderBottom: '2px solid #b4e6c5', boxShadow: '0 1px 12px rgba(34,128,75,0.06)' }}>
           <div className="flex items-center">
             <button
               onClick={() => setMobileOpen(true)}
@@ -219,7 +220,7 @@ const App: React.FC = () => {
             >
               <Menu />
             </button>
-            <h1 className="text-xl font-bold text-gray-800">{getTitle()}</h1>
+            <h1 className="text-xl font-bold text-forest-900 tracking-tight">{getTitle()}</h1>
           </div>
           <div className="flex items-center gap-3">
             {projectTrees.length > 0 && (
