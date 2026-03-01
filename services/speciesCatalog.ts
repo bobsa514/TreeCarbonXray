@@ -7,6 +7,7 @@ export const FALLBACK_IMAGE =
 const IMAGE_CACHE_KEY = 'treecarbonxray_species_images_v1';
 const IMAGE_RESOLVE_CONCURRENCY = 6;
 const WIKIPEDIA_SUMMARY_API = 'https://en.wikipedia.org/api/rest_v1/page/summary';
+const WIKIPEDIA_SEARCH_API = 'https://en.wikipedia.org/w/api.php';
 
 type SpeciesImageEntry = {
   scientific?: string;
@@ -144,11 +145,44 @@ const fetchWikipediaThumbnail = async (title: string): Promise<string | null> =>
   }
 };
 
+const searchWikipediaTitle = async (query: string): Promise<string | null> => {
+  try {
+    const params = new URLSearchParams({
+      action: 'query',
+      list: 'search',
+      srsearch: query,
+      srlimit: '1',
+      format: 'json',
+      origin: '*',
+    });
+    const response = await fetch(`${WIKIPEDIA_SEARCH_API}?${params.toString()}`);
+    if (!response.ok) return null;
+    const data = await response.json() as { query?: { search?: Array<{ title?: string }> } };
+    return data?.query?.search?.[0]?.title || null;
+  } catch {
+    return null;
+  }
+};
+
 const resolveSpeciesImage = async (scientificName: string, commonName: string): Promise<string | null> => {
   const candidates = buildWikipediaCandidates(scientificName, commonName);
+  const triedTitles = new Set<string>();
+
+  const tryTitle = async (title?: string | null): Promise<string | null> => {
+    if (!title) return null;
+    const normalized = title.toLowerCase();
+    if (triedTitles.has(normalized)) return null;
+    triedTitles.add(normalized);
+    return fetchWikipediaThumbnail(title);
+  };
+
   for (const candidate of candidates) {
-    const image = await fetchWikipediaThumbnail(candidate);
-    if (image) return image;
+    const direct = await tryTitle(candidate);
+    if (direct) return direct;
+
+    const searchedTitle = await searchWikipediaTitle(candidate);
+    const searched = await tryTitle(searchedTitle);
+    if (searched) return searched;
   }
   return null;
 };

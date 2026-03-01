@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const WIKIPEDIA_SUMMARY_API = 'https://en.wikipedia.org/api/rest_v1/page/summary';
+const WIKIPEDIA_SEARCH_API = 'https://en.wikipedia.org/w/api.php';
 const DEFAULT_CONCURRENCY = 4;
 const YAML_PATH = path.resolve(process.cwd(), 'public/species-images.yaml');
 
@@ -77,12 +78,40 @@ async function fetchWikipediaImage(title) {
   return data.thumbnail?.source || data.originalimage?.source || null;
 }
 
+async function searchWikipediaTitle(query) {
+  const params = new URLSearchParams({
+    action: 'query',
+    list: 'search',
+    srsearch: query,
+    srlimit: '1',
+    format: 'json',
+  });
+  const response = await fetch(`${WIKIPEDIA_SEARCH_API}?${params.toString()}`);
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data?.query?.search?.[0]?.title || null;
+}
+
 async function resolveSpeciesImage(scientificName, commonName) {
   const candidates = buildCandidates(scientificName, commonName);
+  const triedTitles = new Set();
+
+  const tryTitle = async (title) => {
+    if (!title) return null;
+    const key = title.toLowerCase();
+    if (triedTitles.has(key)) return null;
+    triedTitles.add(key);
+    return fetchWikipediaImage(title);
+  };
+
   for (const candidate of candidates) {
     try {
-      const image = await fetchWikipediaImage(candidate);
-      if (image) return image;
+      const direct = await tryTitle(candidate);
+      if (direct) return direct;
+
+      const searchedTitle = await searchWikipediaTitle(candidate);
+      const searched = await tryTitle(searchedTitle);
+      if (searched) return searched;
     } catch {
       // Ignore this candidate and continue.
     }

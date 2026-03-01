@@ -22,27 +22,9 @@ Script path: `scripts/enrich-species-images.mjs`
 
 ## Current Coverage (2026-03-01)
 - Total species entries: 194
-- Resolved image URLs: 174
-- Remaining TODO entries: 20
+- Resolved image URLs: 194
+- Remaining TODO entries: 0
 
-Remaining manual curation queue:
-- General hardwood harris (general mixed hardwood)
-- General hardwood jenkins (aspen/alder/cottonwood/willow)
-- General softwood jenkins (cedar/larch)
-- General spiny dry vieilledent (general spiny dry climate)
-- General tropical chave (general tropical chave)
-- General woodland jenkins (juniper/oak/mesquite)
-- Morus spp. (mulberry)
-- Tabebuia heterophylla (pink tecoma)
-- Tabebuia ochracea subsp. neochrysantha (golden trumpet tree)
-- Tilia tomentosa (silver linden)
-- Triadica sebifera (tallowtree)
-- Ulmus alata (winged elm)
-- Ulmus americana (American elm)
-- Ulmus pumila (Siberian elm)
-- Umbellularia californica (California laurel)
-- Urban general broadleaf (urban general broadleaf)
-- Urban general conifer (urban general conifer)
-- Veitchia merrillii (manila palm)
-- Washingtonia filifera (California palm)
-- Washingtonia robusta (Mexican fan palm)
+The resolver now uses two passes per candidate:
+1. Direct Wikipedia summary title lookup
+2. Wikipedia search API fallback, then summary lookup on the top hit
