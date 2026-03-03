@@ -1,4 +1,4 @@
-import { ProjectTree, ProjectMetadata, DbhUnit } from '../types';
+import { ModelConfidence, ProjectTree, ProjectMetadata, DbhUnit } from '../types';
 
 const escapeCsv = (value: string | number): string => {
   const str = String(value);
@@ -6,6 +6,17 @@ const escapeCsv = (value: string | number): string => {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
+};
+
+const confidenceNote = (confidence: ModelConfidence, source: string): string => {
+  switch (confidence) {
+    case 'exact':
+      return 'Species-specific USFS i-Tree coefficients (~10–20% uncertainty)';
+    case 'genus':
+      return `Genus-level coefficients from ${source} (~20–40% uncertainty)`;
+    case 'proxy':
+      return `Proxy: ${source} model used — species not in USFS database (~40–60% uncertainty)`;
+  }
 };
 
 export const exportInventoryToCsv = (
@@ -26,6 +37,7 @@ export const exportInventoryToCsv = (
     `Projected Carbon at ${horizon} yrs (kg CO2)`,
     'Model Confidence',
     'Model Source',
+    'Model Note',
   ];
 
   const rows = trees.map((t) => {
@@ -43,6 +55,7 @@ export const exportInventoryToCsv = (
       projectedCarbon,
       t.modelConfidence,
       t.modelSourceScientific,
+      confidenceNote(t.modelConfidence, t.modelSourceScientific),
     ].map(escapeCsv);
   });
 

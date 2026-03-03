@@ -161,15 +161,18 @@ const Calculator: React.FC<CalculatorProps> = ({
       return;
     }
 
-    const matchedSpecies = findSpeciesFromInput();
+    // selectedSpeciesInfo is set when user picked from modal or autocomplete dropdown.
+    // Prefer it over re-parsing the formatted label, which has the order: "Common (Scientific)".
+    const matchedSpecies = selectedSpeciesInfo || findSpeciesFromInput();
 
     let scientific = matchedSpecies?.scientificName || speciesSearch;
     let common = matchedSpecies?.commonName || speciesSearch;
-    
+
     if (!matchedSpecies && speciesSearch.includes('(')) {
+        // Label format from getSpeciesLabel: "${commonName} (${scientificName})"
         const parts = speciesSearch.split('(');
-        scientific = parts[0].trim() || scientific;
-        common = parts[1].replace(')', '').trim() || common;
+        common = parts[0].trim() || common;
+        scientific = parts[1].replace(')', '').trim() || scientific;
     }
 
     // Run Forecast
