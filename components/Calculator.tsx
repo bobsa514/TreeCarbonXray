@@ -461,21 +461,16 @@ const Calculator: React.FC<CalculatorProps> = ({
                       ? `Suggested for ~15-yr urban ${selectedSpeciesInfo.commonName} — adjust to match field measurements.`
                       : 'Height is automatically estimated based on DBH and species growth curve.'}
                   </p>
-                  {selectedSpeciesInfo?.typicalDbh !== undefined && (() => {
-                    const typical = selectedSpeciesInfo.typicalDbh!;
-                    const low = dbhUnit === 'cm'
-                      ? Math.round(typical * 0.5)
-                      : Math.round(typical * 0.5 / 2.54 * 10) / 10;
-                    const high = dbhUnit === 'cm'
-                      ? Math.round(typical * 1.8)
-                      : Math.round(typical * 1.8 / 2.54 * 10) / 10;
-                    return (
-                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1 flex items-center gap-1">
-                        <Info className="w-3 h-3 flex-shrink-0" />
-                        Typical for this species: {low}–{high} {dbhUnit}
-                      </p>
-                    );
-                  })()}
+                  {selectedSpeciesInfo?.typicalDbh !== undefined && (
+                    <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1 flex items-center gap-1">
+                      <Info className="w-3 h-3 flex-shrink-0" />
+                      Typical for this species:{' '}
+                      {dbhUnit === 'cm'
+                        ? `${Math.round(selectedSpeciesInfo.typicalDbh * 0.5)}–${Math.round(selectedSpeciesInfo.typicalDbh * 1.8)} cm`
+                        : `${Math.round(selectedSpeciesInfo.typicalDbh * 0.5 / 2.54 * 10) / 10}–${Math.round(selectedSpeciesInfo.typicalDbh * 1.8 / 2.54 * 10) / 10} in`
+                      }
+                    </p>
+                  )}
               </div>
 
               {formError && (
