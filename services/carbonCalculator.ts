@@ -2,7 +2,7 @@ import { AnnualGrowth, BiomassDensity, GrowthCoefficient, ModelConfidence } from
 
 // --- MATH ENGINE ---
 
-const solveEquation = (eqName: string, x: number, coeffs: GrowthCoefficient): number => {
+export const solveEquation = (eqName: string, x: number, coeffs: GrowthCoefficient): number => {
     const { a, b, c = 0, d = 0, mse = 0 } = coeffs;
     let y = 0;
     

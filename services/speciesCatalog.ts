@@ -1,4 +1,5 @@
 import { BiomassDensity, GrowthCoefficient, SpeciesInfo } from '../types';
+import { solveEquation } from './carbonCalculator';
 
 export type SpeciesImageMap = Record<string, string>;
 
@@ -316,6 +317,39 @@ const resolveImageUrl = (
 };
 
 /**
+ * Derive a representative DBH (cm) for a species by evaluating its
+ * age->dbh growth equation at the given reference age.
+ * Returns undefined if no age->dbh equation is available.
+ */
+const computeTypicalDbh = (
+  scientificName: string,
+  growthCoeffs: GrowthCoefficient[],
+  referenceAge = 15
+): number | undefined => {
+  const nameLower = scientificName.toLowerCase().trim();
+  const genus = nameLower.split(' ')[0];
+
+  // Filter to age->dbh equations only
+  const candidates = growthCoeffs.filter(
+    (c) => c.dependentVar === 'dbh' && c.independentVar === 'age'
+  );
+
+  // Try exact match first, then genus-level
+  const eq =
+    candidates.find((c) => c.scientificName.toLowerCase().trim() === nameLower) ||
+    (genus.length > 3
+      ? candidates.find((c) => c.scientificName.toLowerCase().startsWith(genus + ' '))
+      : undefined);
+
+  if (!eq) return undefined;
+
+  const result = solveEquation(eq.equationName, referenceAge, eq);
+  // Sanity-check: reject physiologically implausible values
+  if (!isFinite(result) || result < 1 || result > 200) return undefined;
+  return Math.round(result * 10) / 10; // round to 1 decimal
+};
+
+/**
  * Build a catalog of species from biomass density and growth coefficient tables.
  * Each entry includes scientific/common names and an image to display in the picker.
  */
@@ -340,11 +374,13 @@ export const buildSpeciesCatalog = (
 
     const normalizedCommon = (commonName || scientificName).trim();
     const imageUrl = resolveImageUrl(speciesImages, scientificName, normalizedCommon);
+    const typicalDbh = computeTypicalDbh(scientificName, growthCoeffs);   // ADD THIS LINE
 
     catalog.set(key, {
       scientificName: scientificName.trim(),
       commonName: normalizedCommon,
       imageUrl,
+      typicalDbh,   // ADD THIS LINE
     });
   };
 
