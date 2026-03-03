@@ -316,15 +316,22 @@ const resolveImageUrl = (
   );
 };
 
+const TYPICAL_URBAN_TREE_AGE = 15; // years; used for suggestive DBH pre-fill in the species picker
+
 /**
- * Derive a representative DBH (cm) for a species by evaluating its
- * age->dbh growth equation at the given reference age.
- * Returns undefined if no age->dbh equation is available.
+ * Derive a representative DBH (cm) for a species by evaluating its age→dbh
+ * growth equation at the reference age (default 15 yrs, a typical urban tree).
+ *
+ * NOTE: Uses the first global match when a species appears in multiple USFS
+ * regions. This is intentional for a UI hint; actual carbon calculations always
+ * use the user's selected region via forecastTreeGrowth().
+ *
+ * Returns undefined if no age→dbh equation is available for this species.
  */
 const computeTypicalDbh = (
   scientificName: string,
   growthCoeffs: GrowthCoefficient[],
-  referenceAge = 15
+  referenceAge = TYPICAL_URBAN_TREE_AGE
 ): number | undefined => {
   const nameLower = scientificName.toLowerCase().trim();
   const genus = nameLower.split(' ')[0];

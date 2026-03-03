@@ -78,7 +78,7 @@ export interface SpeciesInfo {
   scientificName: string;
   commonName: string;
   imageUrl: string;
-  typicalDbh?: number;   // DBH at typical urban tree age (~15 yrs), in cm
+  typicalDbh?: number;   // DBH in cm at typical urban tree age (~15 yrs); see TYPICAL_URBAN_TREE_AGE in speciesCatalog.ts
 }
 
 export interface ProjectMetadata {
