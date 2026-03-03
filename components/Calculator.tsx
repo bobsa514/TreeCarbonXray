@@ -45,6 +45,7 @@ const Calculator: React.FC<CalculatorProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
   const [selectedSpeciesInfo, setSelectedSpeciesInfo] = useState<SpeciesInfo | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const projectTreesRef = React.useRef(projectTrees);
   useEffect(() => { projectTreesRef.current = projectTrees; }, [projectTrees]);
@@ -60,6 +61,12 @@ const Calculator: React.FC<CalculatorProps> = ({
     if (confidence === 'exact') return 'bg-green-100 text-green-800 border-green-200';
     if (confidence === 'genus') return 'bg-amber-100 text-amber-800 border-amber-200';
     return 'bg-red-100 text-red-800 border-red-200';
+  };
+
+  const confidenceTooltip = (confidence: ModelConfidence): string => {
+    if (confidence === 'exact') return 'Exact match: growth data found for this exact species in the selected USFS region.';
+    if (confidence === 'genus') return 'Genus match: no exact species data found; using coefficients from a related species in the same genus.';
+    return 'Proxy model: no genus-level data found; using Acer rubrum (Red Maple) as a conservative growth proxy.';
   };
 
   // Filter species for autocomplete using the dynamic list
@@ -149,7 +156,7 @@ const Calculator: React.FC<CalculatorProps> = ({
     const dbhVal = toCm(parseFloat(dbh));
 
     if (isNaN(dbhVal) || dbhVal <= 0) {
-      alert(`Please enter a valid DBH greater than 0 ${dbhUnit}.`);
+      setFormError(`Please enter a valid DBH greater than 0 ${dbhUnit}.`);
       return;
     }
 
@@ -440,7 +447,7 @@ const Calculator: React.FC<CalculatorProps> = ({
                     <input 
                       type="number"
                       value={dbh}
-                      onChange={(e) => setDbh(e.target.value)}
+                      onChange={(e) => { setDbh(e.target.value); setFormError(null); }}
                       placeholder={dbhUnit === 'cm' ? 'e.g. 20' : 'e.g. 8'}
                       min="0.1"
                       step="0.1"
@@ -454,7 +461,29 @@ const Calculator: React.FC<CalculatorProps> = ({
                       ? `Suggested for ~15-yr urban ${selectedSpeciesInfo.commonName} — adjust to match field measurements.`
                       : 'Height is automatically estimated based on DBH and species growth curve.'}
                   </p>
+                  {selectedSpeciesInfo?.typicalDbh !== undefined && (() => {
+                    const typical = selectedSpeciesInfo.typicalDbh!;
+                    const low = dbhUnit === 'cm'
+                      ? Math.round(typical * 0.5)
+                      : Math.round(typical * 0.5 / 2.54 * 10) / 10;
+                    const high = dbhUnit === 'cm'
+                      ? Math.round(typical * 1.8)
+                      : Math.round(typical * 1.8 / 2.54 * 10) / 10;
+                    return (
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1 flex items-center gap-1">
+                        <Info className="w-3 h-3 flex-shrink-0" />
+                        Typical for this species: {low}–{high} {dbhUnit}
+                      </p>
+                    );
+                  })()}
               </div>
+
+              {formError && (
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {formError}
+                </div>
+              )}
 
               <button 
                 type="submit" 
@@ -513,7 +542,8 @@ const Calculator: React.FC<CalculatorProps> = ({
                                 <div className="text-xs text-gray-500 italic">{tree.speciesScientific}</div>
                                 <div className="mt-1.5 flex items-center gap-2">
                                   <span
-                                    className={`inline-flex items-center border px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${confidenceBadgeClass(tree.modelConfidence)}`}
+                                    title={confidenceTooltip(tree.modelConfidence)}
+                                    className={`inline-flex items-center border px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide cursor-help ${confidenceBadgeClass(tree.modelConfidence)}`}
                                   >
                                     {tree.modelConfidence}
                                   </span>
@@ -571,7 +601,12 @@ const Calculator: React.FC<CalculatorProps> = ({
               <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
               <div className="text-sm text-blue-800">
                   <p className="font-semibold mb-1">Growth Model Active:</p>
-                  <p>Calculations use US Forest Service regional growth coefficients. If specific species coefficients are unavailable for the projected age, the model utilizes a generic proxy (Acer rubrum) for growth rates.</p>
+                  <p>Calculations use US Forest Service regional growth coefficients.
+                    <span className="font-medium"> Exact</span> = direct species match;
+                    <span className="font-medium"> Genus</span> = related species proxy;
+                    <span className="font-medium"> Proxy</span> = Acer rubrum fallback.
+                    Hover confidence badges for details.
+                  </p>
               </div>
            </div>
         </div>
