@@ -526,13 +526,13 @@ const Calculator: React.FC<CalculatorProps> = ({
                               </td>
                               <td className="px-6 py-4 text-sm text-gray-600">
                                 <div className="flex items-center gap-2">
-                                    <span title="Current DBH">{tree.initialDbh}cm</span>
+                                    <span title="Current DBH">{fromCm(tree.initialDbh)} {dbhUnit}</span>
                                     <ArrowRight className="w-3 h-3 text-gray-300" />
                                     <span className="text-xs text-gray-400">{tree.initialHeight.toFixed(1)}m</span>
                                 </div>
                               </td>
                               <td className="px-6 py-4 text-right text-sm text-gray-600">
-                                 <div className="text-forest-600 font-medium">+{growth.toFixed(1)} cm</div>
+                                 <div className="text-forest-600 font-medium">+{fromCm(growth)} {dbhUnit}</div>
                                  <div className="text-xs text-gray-400">over {horizon} yrs</div>
                               </td>
                               <td className="px-6 py-4 text-right">
