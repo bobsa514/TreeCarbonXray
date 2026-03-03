@@ -218,7 +218,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
                             name="DBH" 
                             tickMargin={10} 
                             tickFormatter={(v) => `${Math.round(v)} cm`}
-                            label={{ value: 'Initial DBH (cm)', position: 'insideBottom', offset: -15 }} 
+                            label={{ value: 'Initial DBH (cm, stored)', position: 'insideBottom', offset: -15 }} 
                         />
                         <YAxis 
                             type="number" 

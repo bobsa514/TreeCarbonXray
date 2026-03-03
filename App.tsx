@@ -256,6 +256,7 @@ const App: React.FC = () => {
               projectMetadata={projectMetadata}
               setProjectMetadata={setProjectMetadata}
               horizon={horizon}
+              dbhUnit={dbhUnit}
             />
           </Suspense>
         );
@@ -330,6 +331,7 @@ const App: React.FC = () => {
                 onClick={() => {
                   if (confirm('Clear all trees from this project?')) {
                     setProjectTrees([]);
+                    setProjectMetadata({ name: '', location: '', date: new Date().toISOString().split('T')[0] });
                   }
                 }}
                 className="text-sm text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50"

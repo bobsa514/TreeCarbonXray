@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { ProjectTree, ProjectMetadata } from '../types';
+import { ProjectTree, ProjectMetadata, DbhUnit } from '../types';
 import { Car, Cloud, Trees, CheckCircle2, TrendingUp, Leaf, Printer, Download } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { exportInventoryToCsv } from '../services/csvExport';
@@ -10,9 +10,10 @@ interface DashboardProps {
   projectMetadata: ProjectMetadata;
   setProjectMetadata: (meta: ProjectMetadata) => void;
   horizon: number;
+  dbhUnit: DbhUnit;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, projectMetadata, setProjectMetadata, horizon: _horizon }) => {
+const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, projectMetadata, setProjectMetadata, horizon: _horizon, dbhUnit }) => {
   const [editingMeta, setEditingMeta] = useState(false);
   const [metaDraft, setMetaDraft] = useState<ProjectMetadata>(projectMetadata);
 
@@ -177,7 +178,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, pr
             Export / Print
           </button>
           <button
-            onClick={() => exportInventoryToCsv(projectTrees, projectMetadata, _horizon)}
+            onClick={() => exportInventoryToCsv(projectTrees, projectMetadata, _horizon, dbhUnit)}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors print:hidden"
           >
             <Download className="w-4 h-4" />

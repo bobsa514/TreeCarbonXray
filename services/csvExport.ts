@@ -1,4 +1,4 @@
-import { ProjectTree, ProjectMetadata } from '../types';
+import { ProjectTree, ProjectMetadata, DbhUnit } from '../types';
 
 const escapeCsv = (value: string | number): string => {
   const str = String(value);
@@ -11,13 +11,16 @@ const escapeCsv = (value: string | number): string => {
 export const exportInventoryToCsv = (
   trees: ProjectTree[],
   metadata: ProjectMetadata,
-  horizon: number
+  horizon: number,
+  dbhUnit: DbhUnit = 'cm'
 ): void => {
+  const fromCm = (val: number): string =>
+    dbhUnit === 'in' ? (val / 2.54).toFixed(1) : String(val);
   const headers = [
     'Species (Common)',
     'Species (Scientific)',
     'Count',
-    'Initial DBH (cm)',
+    `Initial DBH (${dbhUnit})`,
     'Initial Height (m)',
     'Current Carbon (kg CO2)',
     `Projected Carbon at ${horizon} yrs (kg CO2)`,
@@ -34,7 +37,7 @@ export const exportInventoryToCsv = (
       t.speciesCommon,
       t.speciesScientific,
       t.count,
-      t.initialDbh,
+      fromCm(t.initialDbh),
       t.initialHeight.toFixed(2),
       t.currentCarbon.toFixed(2),
       projectedCarbon,

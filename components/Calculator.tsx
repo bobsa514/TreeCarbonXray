@@ -202,6 +202,7 @@ const Calculator: React.FC<CalculatorProps> = ({
     setSelectedSpeciesInfo(null);
     setCount(1);
     setDbh('');
+    setFormError(null);
     setShowDropdown(false);
   };
 
