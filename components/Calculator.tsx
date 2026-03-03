@@ -187,6 +187,7 @@ const Calculator: React.FC<CalculatorProps> = ({
 
     // Reset form
     setSpeciesSearch('');
+    setSelectedSpeciesInfo(null);
     setCount(1);
     setDbh('');
     setShowDropdown(false);
