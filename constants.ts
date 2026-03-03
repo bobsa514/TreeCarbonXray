@@ -11,3 +11,16 @@ export const DATA_URLS = {
   TS8_VOLUME_RURAL: 'https://raw.githubusercontent.com/bobsa514/TreeCarbonXray/refs/heads/main/Data/TS8_Volume_and_biomass_eqns_from_rural.csv',
   TS9_BIOMASS_DENSITY: 'https://raw.githubusercontent.com/bobsa514/TreeCarbonXray/refs/heads/main/Data/TS9_Biomass_density_factors.csv',
 };
+
+// Example project trees for onboarding (partial ProjectTree — id/forecastData/carbon computed at runtime)
+export const EXAMPLE_PROJECT_SPECIES: Array<{
+  speciesCommon: string;
+  speciesScientific: string;
+  initialDbh: number;
+  count: number;
+}> = [
+  { speciesCommon: 'Red Maple',    speciesScientific: 'Acer rubrum',          initialDbh: 18, count: 5  },
+  { speciesCommon: 'White Oak',    speciesScientific: 'Quercus alba',         initialDbh: 25, count: 3  },
+  { speciesCommon: 'London Plane', speciesScientific: 'Platanus acerifolia',  initialDbh: 22, count: 10 },
+  { speciesCommon: 'Ginkgo',       speciesScientific: 'Ginkgo biloba',        initialDbh: 15, count: 7  },
+];

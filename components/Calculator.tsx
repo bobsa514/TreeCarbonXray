@@ -4,6 +4,7 @@ import { BiomassDensity, ModelConfidence, ProjectTree, GrowthCoefficient, Specie
 import { forecastTreeGrowth } from '../services/carbonCalculator';
 import SpeciesSelectorModal from './SpeciesSelectorModal';
 import { getSpeciesLabel, FALLBACK_IMAGE } from '../services/speciesCatalog';
+import { EXAMPLE_PROJECT_SPECIES } from '../constants';
 import { Plus, Trash2, Leaf, Search, AlertCircle, ArrowRight, Clock, Info, Wand2, MapPin } from 'lucide-react';
 
 interface CalculatorProps {
@@ -236,6 +237,30 @@ const Calculator: React.FC<CalculatorProps> = ({
     }
     setShowDropdown(false);
     setShowSpeciesModal(false);
+  };
+
+
+  const loadExampleProject = () => {
+    const exampleTrees: ProjectTree[] = EXAMPLE_PROJECT_SPECIES.map((t) => {
+      const { annualData, currentCarbon, modelConfidence, modelSourceScientific } = forecastTreeGrowth(
+        t.speciesScientific,
+        t.initialDbh,
+        horizon,
+        densities,
+        growthCoeffs,
+        selectedRegionRef.current || undefined
+      );
+      return {
+        ...t,
+        id: Math.random().toString(36).substr(2, 9),
+        modelConfidence,
+        modelSourceScientific,
+        initialHeight: annualData[0]?.height ?? 0,
+        currentCarbon: currentCarbon * t.count,
+        forecastData: annualData,
+      };
+    });
+    setProjectTrees(exampleTrees);
   };
 
   return (
@@ -500,6 +525,14 @@ const Calculator: React.FC<CalculatorProps> = ({
                </div>
                <h3 className="text-lg font-medium text-gray-600 mb-1">Inventory Empty</h3>
                <p className="max-w-md mx-auto text-sm">Search for a species and input current size. The model will calculate current carbon storage and forecast growth for the next {horizon} years.</p>
+               <button
+                 type="button"
+                 onClick={loadExampleProject}
+                 className="flex items-center gap-2 px-5 py-2.5 bg-forest-600 text-white rounded-lg hover:bg-forest-700 text-sm font-medium shadow-sm transition-colors"
+               >
+                 <Wand2 className="w-4 h-4" />
+                 Try Example Project
+               </button>
              </div>
            ) : (
              <div className="bg-white rounded-xl shadow-sm border border-sage-200/40 overflow-hidden">
