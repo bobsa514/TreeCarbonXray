@@ -26,7 +26,10 @@ export const exportInventoryToCsv = (
   ];
 
   const rows = trees.map((t) => {
-    const projected = t.forecastData[t.forecastData.length - 1];
+    const lastEntry = t.forecastData[t.forecastData.length - 1];
+    const projectedCarbon = lastEntry
+      ? (lastEntry.carbonStorage * t.count).toFixed(2)
+      : '0.00';
     return [
       t.speciesCommon,
       t.speciesScientific,
@@ -34,13 +37,13 @@ export const exportInventoryToCsv = (
       t.initialDbh,
       t.initialHeight.toFixed(2),
       t.currentCarbon.toFixed(2),
-      (projected.carbonStorage * t.count).toFixed(2),
+      projectedCarbon,
       t.modelConfidence,
       t.modelSourceScientific,
     ].map(escapeCsv);
   });
 
-  const projectLine = `# ${metadata.name || 'Tree Carbon Inventory'} — ${metadata.location || ''} — ${metadata.date}`;
+  const projectLine = `# ${metadata.name || 'Tree Carbon Inventory'} — ${metadata.location || ''} — ${metadata.date || ''}`;
   const csv = [projectLine, headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
