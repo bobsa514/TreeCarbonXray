@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { BiomassDensity, ModelConfidence, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from '../types';
 import { forecastTreeGrowth } from '../services/carbonCalculator';
 import SpeciesSelectorModal from './SpeciesSelectorModal';
-import { getSpeciesLabel } from '../services/speciesCatalog';
+import { getSpeciesLabel, FALLBACK_IMAGE } from '../services/speciesCatalog';
 import { Plus, Trash2, Leaf, Search, AlertCircle, ArrowRight, Clock, Info, Wand2, MapPin } from 'lucide-react';
 
 interface CalculatorProps {
@@ -40,6 +40,7 @@ const Calculator: React.FC<CalculatorProps> = ({
   const [dbh, setDbh] = useState<string>('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showSpeciesModal, setShowSpeciesModal] = useState(false);
+  const [selectedSpeciesInfo, setSelectedSpeciesInfo] = useState<SpeciesInfo | null>(null);
 
   const projectTreesRef = React.useRef(projectTrees);
   useEffect(() => { projectTreesRef.current = projectTrees; }, [projectTrees]);
@@ -210,6 +211,11 @@ const Calculator: React.FC<CalculatorProps> = ({
 
   const selectSpecies = (info: SpeciesInfo) => {
     setSpeciesSearch(getSpeciesLabel(info));
+    setSelectedSpeciesInfo(info);
+    // Auto-fill DBH with species typical value if available
+    if (info.typicalDbh !== undefined) {
+      setDbh(String(info.typicalDbh));
+    }
     setShowDropdown(false);
     setShowSpeciesModal(false);
   };
@@ -316,6 +322,8 @@ const Calculator: React.FC<CalculatorProps> = ({
                     value={speciesSearch}
                     onChange={(e) => {
                       setSpeciesSearch(e.target.value);
+                      setSelectedSpeciesInfo(null);
+                      setDbh('');
                       setShowDropdown(true);
                     }}
                     onFocus={() => setShowDropdown(true)}
@@ -341,6 +349,30 @@ const Calculator: React.FC<CalculatorProps> = ({
                   </div>
                 )}
               </div>
+
+              {/* Selected Species Preview */}
+              {selectedSpeciesInfo && (
+                <div className="flex items-center gap-3 p-3 bg-forest-50 border border-forest-200 rounded-lg">
+                  <img
+                    src={selectedSpeciesInfo.imageUrl}
+                    alt={selectedSpeciesInfo.commonName}
+                    className="w-16 h-16 rounded-lg object-cover flex-shrink-0 border border-forest-100"
+                    onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE; }}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-800 truncate">
+                      {selectedSpeciesInfo.commonName}
+                    </div>
+                    <div className="text-xs text-gray-500 italic truncate">
+                      {selectedSpeciesInfo.scientificName}
+                    </div>
+                    <div className="text-[11px] text-forest-600 mt-0.5 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-forest-500 rounded-full inline-block" />
+                      Species selected
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Count */}
               <div>
@@ -392,7 +424,9 @@ const Calculator: React.FC<CalculatorProps> = ({
                     <span className="absolute right-3 top-2.5 text-gray-400 text-xs">cm</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
-                      Height is automatically estimated based on DBH and Species Growth Curve.
+                    {selectedSpeciesInfo?.typicalDbh !== undefined
+                      ? `Suggested for ~15-yr urban ${selectedSpeciesInfo.commonName} — adjust to match field measurements.`
+                      : 'Height is automatically estimated based on DBH and species growth curve.'}
                   </p>
               </div>
 
