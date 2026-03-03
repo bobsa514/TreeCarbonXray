@@ -1,14 +1,26 @@
-import React, { useMemo } from 'react';
-import { ProjectTree } from '../types';
+import React, { useMemo, useState, useEffect } from 'react';
+import { ProjectTree, ProjectMetadata } from '../types';
 import { Car, Cloud, Trees, CheckCircle2, TrendingUp, Leaf, Printer } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface DashboardProps {
   projectTrees: ProjectTree[];
   switchToBuilder: () => void;
+  projectMetadata: ProjectMetadata;
+  setProjectMetadata: (meta: ProjectMetadata) => void;
+  horizon: number;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) => {
+const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, projectMetadata, setProjectMetadata, horizon: _horizon }) => {
+  const [editingMeta, setEditingMeta] = useState(false);
+  const [metaDraft, setMetaDraft] = useState<ProjectMetadata>(projectMetadata);
+
+  useEffect(() => { setMetaDraft(projectMetadata); }, [projectMetadata]);
+
+  const saveMeta = () => {
+    setProjectMetadata(metaDraft);
+    setEditingMeta(false);
+  };
   
   // Aggregate Data based on the FINAL year of the projection
   const stats = useMemo(() => {
@@ -76,6 +88,65 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder }) 
 
   return (
     <>
+      {/* Project Metadata Header */}
+      <div className="bg-white rounded-xl border border-sage-200/50 shadow-sm p-5 mb-6 print:mb-4">
+        {editingMeta ? (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Project Name</label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-forest-500 outline-none"
+                  value={metaDraft.name}
+                  onChange={(e) => setMetaDraft({ ...metaDraft, name: e.target.value })}
+                  placeholder="e.g. Riverside Park Expansion"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Location</label>
+                <input
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-forest-500 outline-none"
+                  value={metaDraft.location}
+                  onChange={(e) => setMetaDraft({ ...metaDraft, location: e.target.value })}
+                  placeholder="e.g. Portland, OR"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Date</label>
+                <input
+                  type="date"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-forest-500 outline-none"
+                  value={metaDraft.date}
+                  onChange={(e) => setMetaDraft({ ...metaDraft, date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setEditingMeta(false)} className="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={saveMeta} className="text-sm px-3 py-1.5 bg-forest-600 text-white rounded-lg hover:bg-forest-700">Save</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">
+                {projectMetadata.name || <span className="text-gray-400 font-normal italic">Untitled Project</span>}
+              </h2>
+              <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+                {projectMetadata.location && <span>{projectMetadata.location}</span>}
+                {projectMetadata.location && projectMetadata.date && <span>·</span>}
+                {projectMetadata.date && <span>{projectMetadata.date}</span>}
+              </div>
+            </div>
+            <button
+              onClick={() => setEditingMeta(true)}
+              className="text-xs text-gray-400 hover:text-forest-600 border border-gray-200 hover:border-forest-300 px-3 py-1.5 rounded-lg transition-colors print:hidden"
+            >
+              Edit Details
+            </button>
+          </div>
+        )}
+      </div>
       <div className="print-header mb-6 pb-4 border-b border-gray-300">
         <div className="flex justify-between items-start">
           <div>

@@ -1,7 +1,7 @@
 
 import React, { lazy, Suspense, useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
-import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from './types';
+import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption, ProjectMetadata } from './types';
 import { DATA_URLS } from './constants';
 import { parseBiomassDensity, parseGrowthCoefficients, parseRegionalInfo } from './services/dataService';
 import { buildSpeciesCatalog, hydrateSpeciesCatalogImages, loadSpeciesImageMap } from './services/speciesCatalog';
@@ -23,6 +23,7 @@ interface StoredState {
   projectTrees: ProjectTree[];
   horizon: number;
   selectedRegion: string;
+  projectMetadata?: ProjectMetadata;  // optional for backwards compat
 }
 
 const loadCsvWithFallback = async (
@@ -62,6 +63,11 @@ const App: React.FC = () => {
   // Project State (The User's Inventory)
   const [projectTrees, setProjectTrees] = useState<ProjectTree[]>([]);
   const [horizon, setHorizon] = useState<number>(20);
+  const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata>({
+    name: '',
+    location: '',
+    date: new Date().toISOString().split('T')[0],
+  });
   const [needsReconcile, setNeedsReconcile] = useState(false);
 
   // Restore persisted project state on first load
@@ -81,6 +87,7 @@ const App: React.FC = () => {
         }
         if (typeof parsed.horizon === 'number') setHorizon(parsed.horizon);
         if (typeof parsed.selectedRegion === 'string') setSelectedRegion(parsed.selectedRegion);
+        if (parsed.projectMetadata) setProjectMetadata(parsed.projectMetadata);
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
@@ -91,14 +98,14 @@ const App: React.FC = () => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       try {
-        const toSave: StoredState = { projectTrees, horizon, selectedRegion };
+        const toSave: StoredState = { projectTrees, horizon, selectedRegion, projectMetadata };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
       } catch {
         // Storage quota exceeded — skip silently
       }
     }, 500);
     return () => clearTimeout(timeout);
-  }, [projectTrees, horizon, selectedRegion]);
+  }, [projectTrees, horizon, selectedRegion, projectMetadata]);
 
   // After data loads, reconcile any restored trees against fresh coefficients and current horizon
   useEffect(() => {
@@ -241,6 +248,9 @@ const App: React.FC = () => {
             <Dashboard
               projectTrees={projectTrees}
               switchToBuilder={() => setActiveTab('builder')}
+              projectMetadata={projectMetadata}
+              setProjectMetadata={setProjectMetadata}
+              horizon={horizon}
             />
           </Suspense>
         );
