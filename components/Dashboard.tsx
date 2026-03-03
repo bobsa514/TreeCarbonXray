@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { ProjectTree, ProjectMetadata } from '../types';
-import { Car, Cloud, Trees, CheckCircle2, TrendingUp, Leaf, Printer } from 'lucide-react';
+import { Car, Cloud, Trees, CheckCircle2, TrendingUp, Leaf, Printer, Download } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { exportInventoryToCsv } from '../services/csvExport';
 
 interface DashboardProps {
   projectTrees: ProjectTree[];
@@ -174,6 +175,13 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, pr
           >
             <Printer className="w-4 h-4" />
             Export / Print
+          </button>
+          <button
+            onClick={() => exportInventoryToCsv(projectTrees, projectMetadata, _horizon)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors print:hidden"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
           </button>
           <div className="bg-green-50 text-green-800 px-4 py-2 rounded-full text-sm font-medium flex items-center border border-green-100">
             <CheckCircle2 className="w-4 h-4 mr-2" />
