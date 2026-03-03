@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { BiomassDensity, ModelConfidence, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption } from '../types';
+import { BiomassDensity, ModelConfidence, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption, DbhUnit } from '../types';
 import { forecastTreeGrowth } from '../services/carbonCalculator';
 import SpeciesSelectorModal from './SpeciesSelectorModal';
 import { getSpeciesLabel, FALLBACK_IMAGE } from '../services/speciesCatalog';
@@ -18,6 +18,8 @@ interface CalculatorProps {
   setSelectedRegion: (region: string) => void;
   horizon: number;
   setHorizon: (horizon: number) => void;
+  dbhUnit: DbhUnit;
+  setDbhUnit: (unit: DbhUnit) => void;
 }
 
 const Calculator: React.FC<CalculatorProps> = ({
@@ -32,6 +34,8 @@ const Calculator: React.FC<CalculatorProps> = ({
   setSelectedRegion,
   horizon,
   setHorizon,
+  dbhUnit,
+  setDbhUnit,
 }) => {
 
   // Input State
@@ -142,10 +146,10 @@ const Calculator: React.FC<CalculatorProps> = ({
     e.preventDefault();
     if (!speciesSearch || !dbh) return;
 
-    const dbhVal = parseFloat(dbh);
+    const dbhVal = toCm(parseFloat(dbh));
 
     if (isNaN(dbhVal) || dbhVal <= 0) {
-      alert('Please enter a valid DBH greater than 0 cm.');
+      alert(`Please enter a valid DBH greater than 0 ${dbhUnit}.`);
       return;
     }
 
@@ -210,12 +214,18 @@ const Calculator: React.FC<CalculatorProps> = ({
     }));
   };
 
+  const toCm = (val: number): number => dbhUnit === 'in' ? val * 2.54 : val;
+  const fromCm = (val: number): string =>
+    dbhUnit === 'in'
+      ? (val / 2.54).toFixed(1)
+      : String(val);
+
   const selectSpecies = (info: SpeciesInfo) => {
     setSpeciesSearch(getSpeciesLabel(info));
     setSelectedSpeciesInfo(info);
     // Auto-fill DBH with species typical value if available
     if (info.typicalDbh !== undefined) {
-      setDbh(String(info.typicalDbh));
+      setDbh(fromCm(info.typicalDbh));
     }
     setShowDropdown(false);
     setShowSpeciesModal(false);
@@ -405,24 +415,39 @@ const Calculator: React.FC<CalculatorProps> = ({
 
               {/* DBH */}
               <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between">
-                      Current DBH (cm)
+                  <label className="block text-sm font-medium text-gray-700 mb-1 flex justify-between items-center">
+                    <span>Current DBH ({dbhUnit})</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const current = parseFloat(dbh);
+                          if (!isNaN(current)) {
+                            setDbh(dbhUnit === 'cm' ? (current / 2.54).toFixed(1) : (current * 2.54).toFixed(1));
+                          }
+                          setDbhUnit(dbhUnit === 'cm' ? 'in' : 'cm');
+                        }}
+                        className="text-[11px] px-2 py-0.5 rounded border border-gray-300 hover:border-forest-400 text-gray-500 hover:text-forest-600 transition-colors"
+                      >
+                        Switch to {dbhUnit === 'cm' ? 'inches' : 'cm'}
+                      </button>
                       <span className="text-xs font-normal text-gray-400 flex items-center cursor-help" title="Diameter at Breast Height (1.37m)">
-                          <Info className="w-3 h-3 mr-1"/> What is this?
+                        <Info className="w-3 h-3 mr-1"/> What is this?
                       </span>
+                    </div>
                   </label>
                   <div className="relative">
                     <input 
                       type="number"
                       value={dbh}
                       onChange={(e) => setDbh(e.target.value)}
-                      placeholder="e.g. 30"
+                      placeholder={dbhUnit === 'cm' ? 'e.g. 20' : 'e.g. 8'}
                       min="0.1"
                       step="0.1"
                       className="w-full pl-3 pr-8 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-forest-500 outline-none"
                       required
                     />
-                    <span className="absolute right-3 top-2.5 text-gray-400 text-xs">cm</span>
+                    <span className="absolute right-3 top-2.5 text-gray-400 text-xs">{dbhUnit}</span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     {selectedSpeciesInfo?.typicalDbh !== undefined
