@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Development documentation (AI session context, internal plans)
+docs/
+CLAUDE.md
