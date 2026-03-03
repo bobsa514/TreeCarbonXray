@@ -27,7 +27,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, pr
     if(projectTrees.length === 0) return null;
 
     const totalTrees = projectTrees.reduce((acc, t) => acc + t.count, 0);
-    const horizon = projectTrees[0].forecastData.length - 1;
+    const horizon = Math.min(_horizon, projectTrees[0].forecastData.length - 1);
 
     // Current (Year 0) vs Projected (Year End)
     const currentTotalCO2 = projectTrees.reduce((acc, t) =>
@@ -122,7 +122,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, pr
               </div>
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setEditingMeta(false)} className="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button onClick={() => { setMetaDraft(projectMetadata); setEditingMeta(false); }} className="text-sm px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
               <button onClick={saveMeta} className="text-sm px-3 py-1.5 bg-forest-600 text-white rounded-lg hover:bg-forest-700">Save</button>
             </div>
           </div>
