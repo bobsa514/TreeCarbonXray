@@ -582,6 +582,7 @@ const Calculator: React.FC<CalculatorProps> = ({
                    <tbody className="divide-y divide-gray-100">
                      {projectTrees.map((tree) => {
                          const finalData = tree.forecastData[tree.forecastData.length - 1];
+                         if (!finalData) return null;
                          const growth = finalData.dbh - tree.initialDbh;
                          const totalCarbon = finalData.carbonStorage * tree.count;
 
@@ -644,7 +645,7 @@ const Calculator: React.FC<CalculatorProps> = ({
                            <td colSpan={4} className="px-6 py-4 text-sm font-semibold text-gray-700 text-right">Project Lifetime Total ({horizon} Years):</td>
                            <td className="px-6 py-4 text-right">
                                <span className="text-lg font-bold text-forest-800">
-                                   {projectTrees.reduce((acc, t) => acc + (t.forecastData[t.forecastData.length-1].carbonStorage * t.count), 0).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                                   {projectTrees.reduce((acc, t) => { const last = t.forecastData[t.forecastData.length - 1]; return acc + (last ? last.carbonStorage * t.count : 0); }, 0).toLocaleString(undefined, {maximumFractionDigits: 0})}
                                </span>
                                <span className="text-xs text-gray-500 ml-1">kg CO&#8322;</span>
                            </td>
