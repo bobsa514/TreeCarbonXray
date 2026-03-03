@@ -503,92 +503,156 @@ const Calculator: React.FC<CalculatorProps> = ({
              </div>
            ) : (
              <div className="bg-white rounded-xl shadow-sm border border-sage-200/40 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-forest-50 border-b border-forest-100">
-                      <tr>
-                        <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
-                        <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Species</th>
-                        <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Current Size</th>
-                        <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Projected Growth</th>
-                        <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total Impact</th>
-                        <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {projectTrees.map((tree) => {
-                          const finalData = tree.forecastData[tree.forecastData.length - 1];
-                          const growth = finalData.dbh - tree.initialDbh;
-                          const totalCarbon = finalData.carbonStorage * tree.count;
+               {/* Mobile Card View (< lg) */}
+               <div className="lg:hidden divide-y divide-gray-100">
+                 {projectTrees.map((tree) => {
+                   const finalData = tree.forecastData[tree.forecastData.length - 1];
+                   const totalCarbon = finalData ? finalData.carbonStorage * tree.count : 0;
+                   return (
+                     <div key={tree.id} className="p-4 space-y-2">
+                       <div className="flex items-start justify-between">
+                         <div>
+                           <div className="font-medium text-gray-900">{tree.speciesCommon}</div>
+                           <div className="text-xs text-gray-500 italic">{tree.speciesScientific}</div>
+                         </div>
+                         <button
+                           onClick={() => removeTree(tree.id)}
+                           className="text-gray-300 hover:text-red-500 p-1 rounded ml-2 transition-colors"
+                         >
+                           <Trash2 className="w-4 h-4" />
+                         </button>
+                       </div>
+                       <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                         <label className="flex items-center gap-1.5">
+                           <span className="text-xs text-gray-400">Qty</span>
+                           <input
+                             type="number"
+                             min={1}
+                             value={tree.count}
+                             onChange={(e) => updateTreeCount(tree.id, parseInt(e.target.value) || 1)}
+                             className="w-14 text-center border border-gray-200 rounded-md py-1 text-sm"
+                           />
+                         </label>
+                         <span>
+                           <span className="text-xs text-gray-400">DBH </span>
+                           {fromCm(tree.initialDbh)} {dbhUnit}
+                         </span>
+                         <span>
+                           <span className="text-xs text-gray-400">{horizon}yr CO&#8322; </span>
+                           <strong className="text-forest-800">{totalCarbon.toFixed(0)}</strong> kg
+                         </span>
+                       </div>
+                       <span
+                         title={confidenceTooltip(tree.modelConfidence)}
+                         className={`inline-flex items-center border px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide cursor-help ${confidenceBadgeClass(tree.modelConfidence)}`}
+                       >
+                         {tree.modelConfidence}
+                       </span>
+                     </div>
+                   );
+                 })}
+                 {/* Mobile total footer */}
+                 <div className="px-4 py-3 bg-forest-50 border-t border-forest-100 flex justify-between items-center text-sm">
+                   <span className="font-semibold text-gray-700">Project Total ({horizon} Years):</span>
+                   <span>
+                     <span className="text-lg font-bold text-forest-800">
+                       {projectTrees.reduce((acc, t) => {
+                         const last = t.forecastData[t.forecastData.length - 1];
+                         return acc + (last ? last.carbonStorage * t.count : 0);
+                       }, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                     </span>
+                     <span className="text-xs text-gray-500 ml-1">kg CO&#8322;</span>
+                   </span>
+                 </div>
+               </div>
 
-                          return (
-                            <tr key={tree.id} className="hover:bg-blue-50/50 transition-colors group">
-                              <td className="px-6 py-4 font-medium text-gray-900">
-                                <input
-                                  type="number"
-                                  min={1}
-                                  value={tree.count}
-                                  onChange={(e) => updateTreeCount(tree.id, parseInt(e.target.value) || 1)}
-                                  className="w-16 text-center border border-gray-200 rounded-md py-2 text-sm"
-                                />
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="font-medium text-gray-900">{tree.speciesCommon}</div>
-                                <div className="text-xs text-gray-500 italic">{tree.speciesScientific}</div>
-                                <div className="mt-1.5 flex items-center gap-2">
-                                  <span
-                                    title={confidenceTooltip(tree.modelConfidence)}
-                                    className={`inline-flex items-center border px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide cursor-help ${confidenceBadgeClass(tree.modelConfidence)}`}
-                                  >
-                                    {tree.modelConfidence}
-                                  </span>
-                                  {tree.modelConfidence !== 'exact' && (
-                                    <span className="text-[10px] text-gray-500">
-                                      model: {tree.modelSourceScientific}
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-gray-600">
-                                <div className="flex items-center gap-2">
-                                    <span title="Current DBH">{fromCm(tree.initialDbh)} {dbhUnit}</span>
-                                    <ArrowRight className="w-3 h-3 text-gray-300" />
-                                    <span className="text-xs text-gray-400">{tree.initialHeight.toFixed(1)}m</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-right text-sm text-gray-600">
-                                 <div className="text-forest-600 font-medium">+{fromCm(growth)} {dbhUnit}</div>
-                                 <div className="text-xs text-gray-400">over {horizon} yrs</div>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                 <span className="font-semibold text-forest-800">{totalCarbon.toFixed(0)}</span> <span className="text-xs text-gray-500">kg CO₂</span>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <button 
-                                  onClick={() => removeTree(tree.id)}
-                                  className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                      })}
-                    </tbody>
-                    <tfoot className="bg-forest-50 border-t border-forest-100">
-                        <tr>
-                            <td colSpan={4} className="px-6 py-4 text-sm font-semibold text-gray-700 text-right">Project Lifetime Total ({horizon} Years):</td>
-                            <td className="px-6 py-4 text-right">
-                                <span className="text-lg font-bold text-forest-800">
-                                    {projectTrees.reduce((acc, t) => acc + (t.forecastData[t.forecastData.length-1].carbonStorage * t.count), 0).toLocaleString(undefined, {maximumFractionDigits: 0})}
-                                </span>
-                                <span className="text-xs text-gray-500 ml-1">kg CO₂</span>
-                            </td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                  </table>
-                </div>
+               {/* Desktop Table View (>= lg) */}
+               <div className="hidden lg:block overflow-x-auto">
+                 <table className="w-full text-left">
+                   <thead className="bg-forest-50 border-b border-forest-100">
+                     <tr>
+                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Qty</th>
+                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Species</th>
+                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">Current Size</th>
+                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Projected Growth</th>
+                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider text-right">Total Impact</th>
+                       <th className="px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider"></th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-gray-100">
+                     {projectTrees.map((tree) => {
+                         const finalData = tree.forecastData[tree.forecastData.length - 1];
+                         const growth = finalData.dbh - tree.initialDbh;
+                         const totalCarbon = finalData.carbonStorage * tree.count;
+
+                         return (
+                           <tr key={tree.id} className="hover:bg-blue-50/50 transition-colors group">
+                             <td className="px-6 py-4 font-medium text-gray-900">
+                               <input
+                                 type="number"
+                                 min={1}
+                                 value={tree.count}
+                                 onChange={(e) => updateTreeCount(tree.id, parseInt(e.target.value) || 1)}
+                                 className="w-16 text-center border border-gray-200 rounded-md py-2 text-sm"
+                               />
+                             </td>
+                             <td className="px-6 py-4">
+                               <div className="font-medium text-gray-900">{tree.speciesCommon}</div>
+                               <div className="text-xs text-gray-500 italic">{tree.speciesScientific}</div>
+                               <div className="mt-1.5 flex items-center gap-2">
+                                 <span
+                                   title={confidenceTooltip(tree.modelConfidence)}
+                                   className={`inline-flex items-center border px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide cursor-help ${confidenceBadgeClass(tree.modelConfidence)}`}
+                                 >
+                                   {tree.modelConfidence}
+                                 </span>
+                                 {tree.modelConfidence !== 'exact' && (
+                                   <span className="text-[10px] text-gray-500">
+                                     model: {tree.modelSourceScientific}
+                                   </span>
+                                 )}
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-sm text-gray-600">
+                               <div className="flex items-center gap-2">
+                                   <span title="Current DBH">{fromCm(tree.initialDbh)} {dbhUnit}</span>
+                                   <ArrowRight className="w-3 h-3 text-gray-300" />
+                                   <span className="text-xs text-gray-400">{tree.initialHeight.toFixed(1)}m</span>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-right text-sm text-gray-600">
+                                <div className="text-forest-600 font-medium">+{fromCm(growth)} {dbhUnit}</div>
+                                <div className="text-xs text-gray-400">over {horizon} yrs</div>
+                             </td>
+                             <td className="px-6 py-4 text-right">
+                                <span className="font-semibold text-forest-800">{totalCarbon.toFixed(0)}</span> <span className="text-xs text-gray-500">kg CO&#8322;</span>
+                             </td>
+                             <td className="px-6 py-4 text-right">
+                               <button 
+                                 onClick={() => removeTree(tree.id)}
+                                 className="text-gray-300 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+                               >
+                                 <Trash2 className="w-4 h-4" />
+                               </button>
+                             </td>
+                           </tr>
+                         );
+                     })}
+                   </tbody>
+                   <tfoot className="bg-forest-50 border-t border-forest-100">
+                       <tr>
+                           <td colSpan={4} className="px-6 py-4 text-sm font-semibold text-gray-700 text-right">Project Lifetime Total ({horizon} Years):</td>
+                           <td className="px-6 py-4 text-right">
+                               <span className="text-lg font-bold text-forest-800">
+                                   {projectTrees.reduce((acc, t) => acc + (t.forecastData[t.forecastData.length-1].carbonStorage * t.count), 0).toLocaleString(undefined, {maximumFractionDigits: 0})}
+                               </span>
+                               <span className="text-xs text-gray-500 ml-1">kg CO&#8322;</span>
+                           </td>
+                           <td></td>
+                       </tr>
+                   </tfoot>
+                 </table>
+               </div>
              </div>
            )}
            
