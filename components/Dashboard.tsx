@@ -47,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projectTrees, switchToBuilder, pr
     const gasolineGallons = projectedTotalCO2 / 8.887;
 
     return { totalTrees, currentTotalCO2, projectedTotalCO2, netSequestration, co2Tonnes, carYears, gasolineGallons, horizon };
-  }, [projectTrees]);
+  }, [projectTrees, _horizon]);
 
   // Species Distribution for Mini Chart
   const speciesDist = useMemo(() => {

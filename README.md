@@ -4,7 +4,7 @@
 
 Inventory your trees, model their lifetime carbon storage using US Forest Service growth coefficients, and export a client-ready impact report — all in under five minutes, directly in the browser.
 
-**[Live demo →](https://boyangsa.github.io/TreeCarbonXray/)**
+**[Live demo →](https://tree-carbon-xray.vercel.app/)**
 
 ---
 
@@ -49,7 +49,7 @@ Carbon math: `V = π(DBH/2)² × H × 0.45` → `biomass = V × density × 1.2` 
 ```bash
 npm install
 npm run dev
-# Open http://localhost:3000/TreeCarbonXray/
+# Open http://localhost:3000/
 ```
 
 Run smoke tests (CSV parser + forecast engine):
