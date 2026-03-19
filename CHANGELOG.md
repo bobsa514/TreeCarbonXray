@@ -4,6 +4,17 @@ All notable changes to Tree Carbon Xray are documented here.
 
 ## [Unreleased]
 
+## 2026-03-19 — Codex Review Fixes
+
+### Fixed
+- **P1:** Implemented 5 missing USFS equation types (loglogw4, quart, expow2, expow3, expow4) — 48 TS6 rows / 28 species were silently using linear fallback
+- **P2:** Region selector now visible on mobile screens (was `hidden md:flex`)
+- **P2:** Species input warns when name doesn't match catalog (amber warning + dismiss)
+- **P2:** CSV export removes invalid `#` comment line, adds year-by-year forecast columns
+- **P3:** Analytics chart titles clarified (storage vs sequestration)
+- **P3:** README corrected for horizon range (5–50, not 1–50) and feature descriptions
+- **P3:** Added regression tests for all equation types in smoke test suite
+
 ## 2026-03-14
 
 ### Fixed
