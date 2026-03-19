@@ -99,8 +99,8 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
 
             {/* MAIN CHART: Time Series */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-800 mb-2">Cumulative Carbon Sequestration Over Time</h3>
-                <p className="text-xs text-gray-500 mb-6">Projected accumulation of carbon storage (kg CO₂) over the planning horizon.</p>
+                <h3 className="text-lg font-bold text-gray-800 mb-2">Total Carbon Storage Over Time</h3>
+                <p className="text-xs text-gray-500 mb-6">Projected total CO₂ stored by the project inventory (existing stock + new growth) over the planning horizon.</p>
                 <div className="h-96">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart
@@ -179,7 +179,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
                 
                 {/* Carbon Contribution by Species */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">Total Impact by Species (Project Lifetime)</h3>
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">Total Carbon Storage by Species (End of Horizon)</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
