@@ -165,6 +165,13 @@ const Calculator: React.FC<CalculatorProps> = ({
     // Prefer it over re-parsing the formatted label, which has the order: "Common (Scientific)".
     const matchedSpecies = selectedSpeciesInfo || findSpeciesFromInput();
 
+    if (!matchedSpecies) {
+      setFormError(
+        `"${speciesSearch}" was not found in the species catalog. Select a species from the dropdown or browse list for best accuracy. The model will use a genus-level or proxy estimate if you proceed.`
+      );
+      return; // Block first submission — user must dismiss warning then re-click
+    }
+
     let scientific = matchedSpecies?.scientificName || speciesSearch;
     let common = matchedSpecies?.commonName || speciesSearch;
 
@@ -531,9 +538,24 @@ const Calculator: React.FC<CalculatorProps> = ({
               </div>
 
               {formError && (
-                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {formError}
+                <div className={`flex items-start gap-2 text-sm rounded-lg px-3 py-2 ${
+                  formError.includes('not found in the species catalog')
+                    ? 'text-amber-700 bg-amber-50 border border-amber-200'
+                    : 'text-red-600 bg-red-50 border border-red-200'
+                }`}>
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <span>{formError}</span>
+                    {formError.includes('not found in the species catalog') && (
+                      <button
+                        type="button"
+                        onClick={() => { setFormError(null); }}
+                        className="block mt-1 text-xs underline text-amber-600 hover:text-amber-800"
+                      >
+                        Dismiss and add anyway
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
