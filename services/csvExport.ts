@@ -22,45 +22,46 @@ const confidenceNote = (confidence: ModelConfidence, source: string): string => 
 export const exportInventoryToCsv = (
   trees: ProjectTree[],
   metadata: ProjectMetadata,
-  horizon: number,
+  _horizon: number, // kept for call-site compatibility; year columns derived from forecastData
   dbhUnit: DbhUnit = 'cm'
 ): void => {
   const fromCm = (val: number): string =>
     dbhUnit === 'in' ? (val / 2.54).toFixed(1) : String(val);
+
+  // Build year columns from the first tree's forecast length
+  const forecastYears = trees.length > 0 ? trees[0].forecastData.length : 0;
+  const yearHeaders = Array.from({ length: forecastYears }, (_, i) => `Year ${i} CO2 (kg)`);
+
   const headers = [
     'Species (Common)',
     'Species (Scientific)',
     'Count',
     `Initial DBH (${dbhUnit})`,
     'Initial Height (m)',
-    'Current Carbon (kg CO2)',
-    `Projected Carbon at ${horizon} yrs (kg CO2)`,
     'Model Confidence',
     'Model Source',
     'Model Note',
+    ...yearHeaders,
   ];
 
   const rows = trees.map((t) => {
-    const lastEntry = t.forecastData[t.forecastData.length - 1];
-    const projectedCarbon = lastEntry
-      ? (lastEntry.carbonStorage * t.count).toFixed(2)
-      : '0.00';
+    const yearValues = t.forecastData.map(fd =>
+      (fd.carbonStorage * t.count).toFixed(2)
+    );
     return [
       t.speciesCommon,
       t.speciesScientific,
       t.count,
       fromCm(t.initialDbh),
       t.initialHeight.toFixed(2),
-      t.currentCarbon.toFixed(2),
-      projectedCarbon,
       t.modelConfidence,
       t.modelSourceScientific,
       confidenceNote(t.modelConfidence, t.modelSourceScientific),
+      ...yearValues,
     ].map(escapeCsv);
   });
 
-  const projectLine = `# ${metadata.name || 'Tree Carbon Inventory'} — ${metadata.location || ''} — ${metadata.date || ''}`;
-  const csv = [projectLine, headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\n');
+  const csv = [headers.map(escapeCsv).join(','), ...rows.map((r) => r.join(','))].join('\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

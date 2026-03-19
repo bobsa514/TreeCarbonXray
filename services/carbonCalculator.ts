@@ -3,7 +3,7 @@ import { AnnualGrowth, BiomassDensity, GrowthCoefficient, ModelConfidence } from
 // --- MATH ENGINE ---
 
 export const solveEquation = (eqName: string, x: number, coeffs: GrowthCoefficient): number => {
-    const { a, b, c = 0, d = 0, mse = 0 } = coeffs;
+    const { a, b, c = 0, d = 0, e = 0, mse = 0 } = coeffs;
     let y = 0;
     
     // Guard against negative inputs for logs/sqrts
@@ -32,8 +32,24 @@ export const solveEquation = (eqName: string, x: number, coeffs: GrowthCoefficie
         case 'loglogw3': // EXP(a + b*LN(LN(x+1)) + x*(mse/2))
             y = Math.exp(a + b * Math.log(Math.log(safeX + 1)) + (x * (mse / 2)));
             break;
+        case 'loglogw4': // EXP(a + b*LN(LN(x+1)) + (x² * mse/2))
+            y = Math.exp(a + b * Math.log(Math.log(safeX + 1)) + (Math.pow(x, 2) * (mse / 2)));
+            break;
+        case 'quart': // a + b*x + c*x² + d*x³ + e*x⁴
+            y = a + b * x + c * Math.pow(x, 2) + d * Math.pow(x, 3) + e * Math.pow(x, 4);
+            break;
+        case 'expow2': // EXP(a + b*x + SQRT(x) * mse/2)
+            y = Math.exp(a + b * x + (Math.sqrt(safeX) * (mse / 2)));
+            break;
+        case 'expow3': // EXP(a + b*x + x * mse/2)
+            y = Math.exp(a + b * x + (x * (mse / 2)));
+            break;
+        case 'expow4': // EXP(a + b*x + x² * mse/2)
+            y = Math.exp(a + b * x + (Math.pow(x, 2) * (mse / 2)));
+            break;
         default:
-            // Default linear fallback if unknown equation
+            // Unknown equation type — warn and fall back to linear
+            console.warn(`solveEquation: unknown equation type "${eqName}", falling back to linear (a + b*x)`);
             y = a + b * x;
     }
     return Math.max(0, y); // Prevent negative dimensions
