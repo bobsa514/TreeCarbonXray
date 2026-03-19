@@ -22,9 +22,9 @@ Tree Carbon Xray gives you that answer in minutes, using the same USFS biomass s
 - **DBH auto-fill** — suggested diameter pre-filled from TS6 growth equations at typical 15-yr urban tree age; override with your own field measurement
 - **Unit toggle** — enter DBH in cm or inches; all math stays in cm internally
 - **Regional calibration** — select your USFS region (16 options) to use locally calibrated growth coefficients
-- **Forecast table** — projected DBH, height, and carbon storage per species group over a configurable horizon (1–50 yrs)
+- **Growth projections** — projected DBH growth and carbon storage per species group over a configurable horizon (5–50 yrs, 5-year steps)
 - **Impact report** — summary cards, vehicle/gasoline equivalencies, species composition pie chart, and editable project metadata (name, location, date) for client delivery
-- **CSV export** — one-click download of your full inventory with forecast values
+- **CSV export** — one-click download of your full inventory with year-by-year carbon forecast
 - **Analytics** — cumulative sequestration timeline, annual rate chart, species breakdown
 - **Example project** — one-click demo with Red Maple, White Oak, London Plane, and Ginkgo to see the full UI immediately
 - **Mobile-friendly** — inventory adapts to card layout on small screens
