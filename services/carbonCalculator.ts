@@ -55,6 +55,29 @@ export const solveEquation = (eqName: string, x: number, coeffs: GrowthCoefficie
     return Math.max(0, y); // Prevent negative dimensions
 };
 
+// --- CONFIDENCE HELPER ---
+// Lightweight tier lookup for UI surfaces (e.g. species browser) that don't need a full forecast.
+// Uses the same prioritisation as forecastTreeGrowth.
+export const getModelConfidence = (
+    speciesName: string,
+    _densities: BiomassDensity[],
+    growthCoeffs: GrowthCoefficient[],
+    regionCode?: string,
+): ModelConfidence => {
+    const scientificLower = speciesName.toLowerCase().trim();
+    const genus = scientificLower.split(' ')[0];
+    const regionalPool = regionCode ? growthCoeffs.filter(g => g.region === regionCode) : growthCoeffs;
+
+    const matchExact = (pool: GrowthCoefficient[]) =>
+        pool.some(g => g.scientificName.toLowerCase().trim() === scientificLower);
+    const matchGenus = (pool: GrowthCoefficient[]) =>
+        genus.length > 3 && pool.some(g => g.scientificName.toLowerCase().startsWith(genus + ' '));
+
+    if (matchExact(regionalPool) || matchExact(growthCoeffs)) return 'exact';
+    if (matchGenus(regionalPool) || matchGenus(growthCoeffs)) return 'genus';
+    return 'proxy';
+};
+
 // --- CORE LOGIC ---
 
 // 1. Calculate Carbon for a single point in time

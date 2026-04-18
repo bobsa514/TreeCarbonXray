@@ -4,6 +4,33 @@ All notable changes to Tree Carbon Xray are documented here.
 
 ## [Unreleased]
 
+## 2026-04-17 — Editorial Magazine Redesign
+
+Full visual redesign based on a Claude Design handoff bundle. The science engine, data pipeline, and confidence-tier model are untouched — this is a pure visual layer overhaul.
+
+### Changed
+- **Design system**: Off-white paper (`#f8f7f2`), ink (`#1a1d1a`), muted olive (`#6b8e5a`), terracotta (`#c87a54`). Instrument Serif editorial headlines + Inter UI + JetBrains Mono for data. Paper-grain background texture, hairline rules.
+- **Navigation**: Replaced left Sidebar with sticky `TopNav` (brand · horizontal tabs · tree-count badge) and a subbar exposing horizon (mini-bar slider), region, and DBH unit toggle globally.
+- **Project Builder**: Editorial two-column layout — sticky add-tree card with confidence-tier guidance on the left, live lifetime-total strip (ink panel with serif numerals), inventory table with inline quantity steppers + per-tree silhouettes, mini-bar year timeline on the right. New magazine-style empty state with botanical accents.
+- **Impact Report**: Magazine masthead with volume/issue line, serif project title (88px), side-note model-confidence card, giant ink hero panel with `clamp(100px, 16vw, 220px)` serif headline number, equivalency tile in terracotta wash, side-by-side composition donut. Pull-quote-style growth narrative.
+- **Visual Analytics**: Dropped Recharts in favor of hand-authored SVG — cumulative area with hover crosshair, annual-rate bars with dashed "peak year" marker, species-ranked bars, efficiency scatter. "Peak Growth Window" callout card at the top.
+- **Species Browser**: Full-bleed modal with botanical header, photo/silhouette cards, inline confidence badge per card, typical DBH hint.
+
+### Added
+- `styles/tokens.css` — design-system CSS custom properties (colors, radii, shadows, type ramp, pill/button/input/conf-badge utilities).
+- `styles/botanicals.css` — decorative-accent hooks.
+- `components/Botanicals.tsx` — reusable line-illustration SVGs (`BotLeaf`, `BotBranch`, `BotRings`, `BotSprig`) + `TreeSilhouette` card placeholder with 4 canopy variants.
+- `components/Modal.tsx` — reusable modal shell with escape-to-close and scroll lock.
+- `components/TopNav.tsx` — new top navigation + global controls subbar.
+- `components/SpeciesBrowser.tsx` — replaces `SpeciesSelectorModal`.
+- `services/format.ts` — `fmt`, `cmToIn`, `inToCm`, `fmtDbh` helpers.
+- `getModelConfidence()` lightweight tier lookup on `services/carbonCalculator.ts` for surfaces that don't need a full forecast.
+
+### Removed
+- `components/Sidebar.tsx` — superseded by TopNav.
+- `components/SpeciesSelectorModal.tsx` — superseded by SpeciesBrowser.
+- Tailwind CDN + `tailwind.config` removed from `index.html`. All components now style through design-token CSS classes (`.btn`, `.pill`, `.conf`, `.tbl`, `.card`, `.eyebrow`, `.serif`, `.mono`, etc.) plus inline styles. Reduces one CDN dependency and unifies the styling model.
+
 ## 2026-03-19 — Codex Review Fixes
 
 ### Fixed

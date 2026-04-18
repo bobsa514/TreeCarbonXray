@@ -1,0 +1,7 @@
+/* Botanical illustrative accents — used via ::before or inline */
+.bot-corner {
+  position: absolute;
+  pointer-events: none;
+  opacity: .5;
+  color: var(--olive);
+}

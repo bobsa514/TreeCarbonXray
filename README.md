@@ -65,18 +65,24 @@ npm run test:smoke
 App.tsx                      # Routing, data loading, global state
 types.ts                     # TypeScript interfaces
 constants.ts                 # GitHub raw data URLs, example project data
-index.html                   # Tailwind CDN config, importmap, print CSS
+index.html                   # Google Fonts, importmap, print CSS
+styles/
+  tokens.css                 # Design-system tokens (color, type, spacing, components)
+  botanicals.css             # Decorative-accent hooks
 components/
-  Calculator.tsx             # Inventory form, species picker, forecast table
-  Dashboard.tsx              # Impact report, project metadata, CSV export
-  Analytics.tsx              # Sequestration timeline and species charts
-  SpeciesSelectorModal.tsx   # Full-screen species image picker
-  Sidebar.tsx                # Navigation, tree facts
+  TopNav.tsx                 # Top nav + global controls subbar (horizon, region, unit)
+  Calculator.tsx             # Project Builder — editorial inventory page
+  Dashboard.tsx              # Impact Report — magazine-spread deliverable
+  Analytics.tsx              # Visual Analytics — custom SVG charts
+  SpeciesBrowser.tsx         # Full-bleed species picker modal
+  Botanicals.tsx             # Line-illustration SVG accents + tree silhouettes
+  Modal.tsx                  # Reusable modal shell
 services/
-  carbonCalculator.ts        # Growth math engine — forecastTreeGrowth()
+  carbonCalculator.ts        # Growth math engine — forecastTreeGrowth() + getModelConfidence()
   dataService.ts             # CSV parsers for USFS datasets
   speciesCatalog.ts          # Species catalog builder, image resolution
   csvExport.ts               # Client-side CSV generation
+  format.ts                  # Display helpers (fmt, cmToIn, fmtDbh)
 public/
   species-images.yaml        # Curated species photo URLs
 Data/                        # Original USFS CSVs (bundled as local fallback)

@@ -1,280 +1,413 @@
-import React, { useMemo } from 'react';
-import { ProjectTree } from '../types';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, ZAxis, AreaChart, Area
-} from 'recharts';
+import React, { useMemo, useState } from 'react';
+import { ProjectTree, DbhUnit } from '../types';
+import { fmt, cmToIn } from '../services/format';
+import { BotRings } from './Botanicals';
 
 interface AnalyticsProps {
-    projectTrees: ProjectTree[];
+  projectTrees: ProjectTree[];
+  switchToBuilder: () => void;
+  horizon: number;
+  dbhUnit: DbhUnit;
 }
 
-const Analytics: React.FC<AnalyticsProps> = ({ projectTrees }) => {
-
-    // 1. Prepare Time Series Data
-    const timeSeriesData = useMemo(() => {
-        if(projectTrees.length === 0) return [];
-        const years = projectTrees[0].forecastData.length;
-        const data = [];
-
-        for (let i = 0; i < years; i++) {
-            const yearData: any = { year: i };
-            let totalYearCarbon = 0;
-
-            projectTrees.forEach(t => {
-                // Accumulate carbon for this species group
-                const treeCarbon = t.forecastData[i].carbonStorage * t.count;
-                yearData[t.speciesCommon] = (yearData[t.speciesCommon] || 0) + treeCarbon;
-                totalYearCarbon += treeCarbon;
-            });
-            
-            yearData.total = totalYearCarbon;
-            data.push(yearData);
-        }
-        return data;
-    }, [projectTrees]);
-
-    // Annual CO₂ added each year (not cumulative) — for rate chart
-    const annualSequestrationData = useMemo(() => {
-        if (projectTrees.length === 0) return [];
-        const years = projectTrees[0].forecastData.length;
-        return Array.from({ length: years }, (_, i) => {
-            let totalAnnual = 0;
-            projectTrees.forEach(t => {
-                totalAnnual += t.forecastData[i].annualSequestration * t.count;
-            });
-            return { year: i, annualCO2: parseFloat(totalAnnual.toFixed(2)) };
-        });
-    }, [projectTrees]);
-
-    const xTickInterval = useMemo(() => {
-        if (timeSeriesData.length <= 1) return 0;
-        return Math.max(1, Math.floor((timeSeriesData.length - 1) / 6));
-    }, [timeSeriesData]);
-
-    // 2. Carbon by Species (Final Year)
-    const speciesCarbonData = useMemo(() => {
-        const data: Record<string, { name: string, co2: number, count: number }> = {};
-        const horizonIndex = projectTrees.length > 0 ? projectTrees[0].forecastData.length - 1 : 0;
-
-        projectTrees.forEach(t => {
-            const finalCarbon = t.forecastData[horizonIndex].carbonStorage * t.count;
-            if (!data[t.speciesCommon]) {
-                data[t.speciesCommon] = { name: t.speciesCommon, co2: 0, count: 0 };
-            }
-            data[t.speciesCommon].co2 += finalCarbon;
-            data[t.speciesCommon].count += t.count;
-        });
-        return Object.values(data).sort((a, b) => b.co2 - a.co2);
-    }, [projectTrees]);
-
-    const totalSpeciesCO2 = useMemo(
-        () => speciesCarbonData.reduce((a, b) => a + b.co2, 0),
-        [speciesCarbonData]
-    );
-
-    // 3. Scatter data (Current DBH vs Efficiency)
-    const scatterData = useMemo(() => {
-        const horizonIndex = projectTrees.length > 0 ? projectTrees[0].forecastData.length - 1 : 0;
-        return projectTrees.map(t => ({
-            dbh: t.initialDbh,
-            co2: t.forecastData[horizonIndex].carbonStorage, // Lifetime potential per tree
-            name: t.speciesCommon,
-            amt: t.count 
-        }));
-    }, [projectTrees]);
-
+const Analytics: React.FC<AnalyticsProps> = ({ projectTrees, switchToBuilder, horizon, dbhUnit }) => {
+  const { byYear, annual, speciesRanked, peakYear, totalFinal } = useMemo(() => {
     if (projectTrees.length === 0) {
-        return (
-             <div className="h-[50vh] flex items-center justify-center text-gray-400">
-                 <p>Add trees to your project to view detailed analytics.</p>
-             </div>
-        );
+      return { byYear: [], annual: [], speciesRanked: [], peakYear: 0, totalFinal: 0 };
     }
-
-    return (
-        <div className="space-y-8">
-            <div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">Visual Analytics</h2>
-            </div>
-
-            {/* MAIN CHART: Time Series */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-800 mb-2">Total Carbon Storage Over Time</h3>
-                <p className="text-xs text-gray-500 mb-6">Projected total CO₂ stored by the project inventory (existing stock + new growth) over the planning horizon.</p>
-                <div className="h-96">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart
-                            data={timeSeriesData}
-                            margin={{ top: 10, right: 30, left: 20, bottom: 20 }}
-                        >
-                            <defs>
-                                <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#2e9e5e" stopOpacity={0.85}/>
-                                    <stop offset="95%" stopColor="#2e9e5e" stopOpacity={0.02}/>
-                                </linearGradient>
-                            </defs>
-                            <XAxis 
-                                dataKey="year" 
-                                tick={{fontSize: 12}} 
-                                interval={xTickInterval || 0}
-                                tickMargin={10}
-                                allowDecimals={false}
-                                label={{ value: 'Year', position: 'insideBottomRight', offset: -5 }}
-                            />
-                            <YAxis 
-                                width={90}
-                                tickMargin={10}
-                                allowDecimals={false}
-                                label={{ value: 'Total CO₂ (kg)', angle: -90, position: 'insideLeft', offset: 10 }} 
-                            />
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <Tooltip contentStyle={{borderRadius: '8px'}} />
-                            <Area type="monotone" dataKey="total" stroke="#1d673d" strokeWidth={2} fillOpacity={1} fill="url(#colorTotal)" />
-                        </AreaChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-            {/* Annual Sequestration Rate */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                <h3 className="text-lg font-bold text-gray-800 mb-1">Annual Carbon Sequestration Rate</h3>
-                <p className="text-xs text-gray-500 mb-6">
-                    Carbon added each year (kg CO₂). Peak shows when trees are growing fastest — the highest-value growth window for planning.
-                </p>
-                <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={annualSequestrationData}
-                            margin={{ top: 10, right: 30, left: 20, bottom: 20 }}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                            <XAxis
-                                dataKey="year"
-                                tick={{ fontSize: 12 }}
-                                interval={xTickInterval || 0}
-                                tickMargin={10}
-                                allowDecimals={false}
-                                label={{ value: 'Year', position: 'insideBottomRight', offset: -5 }}
-                            />
-                            <YAxis
-                                width={90}
-                                tickMargin={10}
-                                label={{ value: 'CO₂ Added (kg/yr)', angle: -90, position: 'insideLeft', offset: 10 }}
-                            />
-                            <Tooltip
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                                formatter={(v: number) => [`${v.toLocaleString()} kg CO₂`, 'Annual Sequestration']}
-                                labelFormatter={(l) => `Year ${l}`}
-                            />
-                            <Bar dataKey="annualCO2" fill="#2e9e5e" name="Annual CO₂ (kg)" radius={[3, 3, 0, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">
-                    Year 0 shows current state (no annual delta). Sequestration rate typically peaks in middle age then tapers.
-                </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-8">
-                
-                {/* Carbon Contribution by Species */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-bold text-gray-800 mb-2">Total Carbon Storage by Species (End of Horizon)</h3>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={speciesCarbonData}
-                                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                <XAxis dataKey="name" tick={{fontSize: 12}} interval={0} tickMargin={12} />
-                                <YAxis 
-                                    width={80}
-                                    tickMargin={8}
-                                    label={{ value: 'CO₂ (kg)', angle: -90, position: 'insideLeft', offset: 10 }} 
-                                />
-                                <Tooltip 
-                                    cursor={{fill: '#f9fafb'}}
-                                    contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}
-                                />
-                                <Bar dataKey="co2" fill="#2e9e5e" name="Lifetime CO₂ (kg)" radius={[4, 4, 0, 0]} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Efficiency Chart (Scatter) */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-                        <h3 className="text-lg font-bold text-gray-800 mb-2">Sequestration Efficiency</h3>
-                        <p className="text-xs text-gray-500 mb-6">Initial DBH vs. Lifetime Carbon Potential per tree.</p>
-                        <div className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart margin={{ top: 20, right: 30, bottom: 45, left: 90 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                            type="number" 
-                            dataKey="dbh" 
-                            name="DBH" 
-                            tickMargin={10} 
-                            tickFormatter={(v) => `${Math.round(v)} cm`}
-                            label={{ value: 'Initial DBH (cm, stored)', position: 'insideBottom', offset: -15 }} 
-                        />
-                        <YAxis 
-                            type="number" 
-                            dataKey="co2" 
-                            name="CO₂" 
-                            width={110}
-                            tickMargin={12}
-                            tickFormatter={(v) => Math.round(v).toLocaleString()}
-                            unit=" kg"
-                            label={{ value: 'Lifetime CO₂ per tree (kg)', angle: -90, position: 'insideLeft', offset: -5 }} 
-                        />
-                        <ZAxis type="number" dataKey="amt" range={[60, 400]} name="Count" />
-                                    <Tooltip cursor={{ strokeDasharray: '3 3' }} contentStyle={{borderRadius: '8px'}} />
-                                    <Scatter name="Trees" data={scatterData} fill="#5e825e" fillOpacity={0.65} stroke="#3b543c" />
-                                </ScatterChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                     {/* Summary Table */}
-                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col">
-                        <h3 className="text-lg font-bold text-gray-800 mb-4">Species Breakdown</h3>
-                        <div className="flex-1 overflow-auto">
-                            <table className="min-w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                                    <tr>
-                                        <th className="px-4 py-3">Species</th>
-                                        <th className="px-4 py-3 text-right">Qty</th>
-                                        <th className="px-4 py-3 text-right">Total CO₂</th>
-                                        <th className="px-4 py-3 text-right">%</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {speciesCarbonData.map((row, i) => {
-                                        const percentage = (row.co2 / totalSpeciesCO2) * 100;
-                                        return (
-                                            <tr key={i} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3 font-medium text-gray-800">{row.name}</td>
-                                                <td className="px-4 py-3 text-right text-gray-600">{row.count}</td>
-                                                <td className="px-4 py-3 text-right text-gray-600">{row.co2.toLocaleString(undefined, {maximumFractionDigits:0})} kg</td>
-                                                <td className="px-4 py-3 text-right">
-                                                    <span className="inline-block px-2 py-1 rounded-full bg-green-100 text-green-800 text-xs">
-                                                        {percentage.toFixed(1)}%
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                     </div>
-                </div>
-            </div>
-        </div>
+    const years = projectTrees[0].forecastData.length;
+    const byYear: number[] = Array.from({ length: years }, (_, y) =>
+      projectTrees.reduce((a, t) => a + (t.forecastData[y]?.carbonStorage ?? 0) * t.count, 0),
     );
+    const annual = byYear.map((v, i, arr) => i === 0 ? 0 : v - arr[i - 1]);
+
+    const speciesRanked = [...projectTrees]
+      .map(t => {
+        const end = t.forecastData[t.forecastData.length - 1];
+        return {
+          id: t.id,
+          common: t.speciesCommon,
+          scientific: t.speciesScientific,
+          count: t.count,
+          initialDbh: t.initialDbh,
+          totalFinal: (end?.carbonStorage ?? 0) * t.count,
+          perTreeFinal: end?.carbonStorage ?? 0,
+        };
+      })
+      .sort((a, b) => b.totalFinal - a.totalFinal);
+
+    const totalFinal = speciesRanked.reduce((a, r) => a + r.totalFinal, 0);
+    const peakYear = annual.indexOf(Math.max(...annual));
+    return { byYear, annual, speciesRanked, peakYear, totalFinal };
+  }, [projectTrees]);
+
+  if (projectTrees.length === 0) {
+    return (
+      <div style={{ padding: '120px 32px', textAlign: 'center', maxWidth: 640, margin: '0 auto' }}>
+        <BotRings size={100} style={{ color: 'var(--stone-2)', margin: '0 auto 20px' }}/>
+        <div className="eyebrow">§03 · Visual Analytics</div>
+        <h2 className="serif" style={{ fontSize: 48, margin: '8px 0 16px', letterSpacing: '-0.02em' }}>
+          No data to chart.
+        </h2>
+        <p className="body" style={{ margin: '0 auto 24px', maxWidth: 420 }}>
+          Build an inventory first — the analytics view needs at least one species to plot.
+        </p>
+        <button className="btn" onClick={switchToBuilder}>← Back to Project Builder</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '48px 32px 80px', maxWidth: 1440, margin: '0 auto' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', alignItems: 'end', marginBottom: 40, gap: 32 }}>
+        <div>
+          <div className="eyebrow">§03 · Visual Analytics</div>
+          <h1 className="serif" style={{ fontSize: 72, margin: '6px 0 12px', lineHeight: 0.96, letterSpacing: '-0.025em' }}>
+            The <em style={{ color: 'var(--olive)' }}>shape</em> of sequestration.
+          </h1>
+          <p className="body" style={{ maxWidth: 640, fontSize: 16 }}>
+            Look past the headline. Understand how and when carbon accumulates, which species do the heavy lifting, and how initial stem size translates to lifetime potential.
+          </p>
+        </div>
+        <div style={styles.peakCard}>
+          <div className="eyebrow" style={{ color: 'var(--olive-deep)' }}>Peak Growth Window</div>
+          <div className="serif" style={{ fontSize: 56, lineHeight: 1, margin: '6px 0' }}>Y{peakYear}</div>
+          <div className="caption">Highest annual sequestration rate</div>
+        </div>
+      </div>
+
+      {/* Chart A — cumulative area */}
+      <div className="card" style={{ padding: 32, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div>
+            <div className="eyebrow">Chart A · Cumulative</div>
+            <h3 className="serif" style={{ fontSize: 28, margin: '4px 0 0', letterSpacing: '-0.01em' }}>
+              Total Carbon Storage Over Time
+            </h3>
+          </div>
+          <Legend color="var(--olive)" label="Total CO₂ stored"/>
+        </div>
+        <div style={{ marginTop: 24 }}>
+          <AreaChart values={byYear}/>
+        </div>
+        <div className="caption" style={{ marginTop: 12, fontSize: 11, maxWidth: 680 }}>
+          Projected total CO₂ stored by the project inventory (existing stock + new growth) over the planning horizon.
+        </div>
+      </div>
+
+      {/* Chart B — annual bars */}
+      <div className="card" style={{ padding: 32, marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div>
+            <div className="eyebrow">Chart B · Annual rate</div>
+            <h3 className="serif" style={{ fontSize: 28, margin: '4px 0 0', letterSpacing: '-0.01em' }}>
+              Carbon Sequestered Per Year
+            </h3>
+          </div>
+          <Legend color="var(--terracotta)" label="CO₂ added (kg/yr)"/>
+        </div>
+        <div style={{ marginTop: 24 }}>
+          <BarChart values={annual} peakYear={peakYear}/>
+        </div>
+        <div className="caption" style={{ marginTop: 12, fontSize: 11 }}>
+          Carbon added each year (kg CO₂). <strong style={{ color: 'var(--terracotta-deep)' }}>Peak at Y{peakYear}</strong> — the highest-value growth window.
+          Year 0 shows current state (no annual delta). Sequestration rate typically peaks in middle age then tapers.
+        </div>
+      </div>
+
+      {/* Chart C + species table */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, marginBottom: 24 }}>
+        <div className="card" style={{ padding: 32 }}>
+          <div className="eyebrow">Chart C · Ranked</div>
+          <h3 className="serif" style={{ fontSize: 24, margin: '4px 0 20px', letterSpacing: '-0.01em' }}>
+            Carbon by Species · Y{horizon}
+          </h3>
+          <SpeciesBars items={speciesRanked}/>
+        </div>
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: 24, borderBottom: '1px solid var(--stone)' }}>
+            <div className="eyebrow">Breakdown</div>
+            <h3 className="serif" style={{ fontSize: 24, margin: '4px 0 0', letterSpacing: '-0.01em' }}>Species table</h3>
+          </div>
+          <table className="tbl">
+            <thead>
+              <tr>
+                <th>Species</th>
+                <th style={{ textAlign: 'right' }}>Qty</th>
+                <th style={{ textAlign: 'right' }}>CO₂</th>
+                <th style={{ textAlign: 'right' }}>% project</th>
+              </tr>
+            </thead>
+            <tbody>
+              {speciesRanked.map(f => (
+                <tr key={f.id}>
+                  <td>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{f.common}</div>
+                    <div className="serif caption" style={{ fontStyle: 'italic' }}>{f.scientific}</div>
+                  </td>
+                  <td style={{ textAlign: 'right' }} className="mono">{f.count}</td>
+                  <td style={{ textAlign: 'right' }} className="mono">{fmt.kg(f.totalFinal)}</td>
+                  <td style={{ textAlign: 'right' }} className="mono">
+                    {totalFinal > 0 ? fmt.pct(100 * f.totalFinal / totalFinal) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Chart D — scatter */}
+      <div className="card" style={{ padding: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div>
+            <div className="eyebrow">Chart D · Efficiency</div>
+            <h3 className="serif" style={{ fontSize: 28, margin: '4px 0 0', letterSpacing: '-0.01em' }}>
+              Sequestration Efficiency
+            </h3>
+          </div>
+          <Legend color="var(--olive)" label="Species (dot size = qty)"/>
+        </div>
+        <div style={{ marginTop: 24 }}>
+          <Scatter items={speciesRanked} unit={dbhUnit}/>
+        </div>
+        <div className="caption" style={{ marginTop: 12, fontSize: 11 }}>
+          Initial DBH vs. Lifetime Carbon Potential per tree. Use to reason about whether planting larger stock pays off in carbon terms.
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Legend: React.FC<{ color: string; label: string }> = ({ color, label }) => (
+  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div style={{ width: 10, height: 10, background: color, borderRadius: 2 }}/>
+    <span className="mono" style={{ fontSize: 10, color: 'var(--ink-3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+      {label}
+    </span>
+  </div>
+);
+
+const AreaChart: React.FC<{ values: number[] }> = ({ values }) => {
+  const [hover, setHover] = useState<number | null>(null);
+  const w = 1000, h = 320;
+  const pad = { t: 20, r: 30, b: 30, l: 60 };
+  const max = Math.max(...values, 1);
+  const xs = (i: number) => pad.l + (i / Math.max(1, values.length - 1)) * (w - pad.l - pad.r);
+  const ys = (v: number) => pad.t + (1 - v / max) * (h - pad.t - pad.b);
+  const path = values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${xs(i)} ${ys(v)}`).join(' ');
+  const area = path + ` L ${xs(values.length - 1)} ${h - pad.b} L ${xs(0)} ${h - pad.b} Z`;
+  const gridY = [0, 0.25, 0.5, 0.75, 1];
+  const tickEvery = Math.max(1, Math.floor(values.length / 10));
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`}
+         style={{ width: '100%', height: 320, display: 'block', overflow: 'visible' }}
+         onMouseLeave={() => setHover(null)}>
+      {gridY.map((g, i) => (
+        <g key={i}>
+          <line x1={pad.l} x2={w - pad.r}
+                y1={pad.t + g * (h - pad.t - pad.b)} y2={pad.t + g * (h - pad.t - pad.b)}
+                stroke="var(--stone)" strokeWidth="1"
+                strokeDasharray={g === 0 || g === 1 ? 'none' : '2 3'}/>
+          <text x={pad.l - 10} y={pad.t + g * (h - pad.t - pad.b) + 4}
+                textAnchor="end" fontFamily="var(--font-mono)" fontSize="10" fill="var(--ink-3)">
+            {fmt.kg(max * (1 - g))}
+          </text>
+        </g>
+      ))}
+      <path d={area} fill="var(--olive)" fillOpacity="0.15"/>
+      <path d={path} fill="none" stroke="var(--olive)" strokeWidth="2"/>
+      {values.map((_, i) => {
+        if (i !== 0 && i !== values.length - 1 && i % tickEvery !== 0) return null;
+        return (
+          <g key={i}>
+            <line x1={xs(i)} x2={xs(i)} y1={h - pad.b} y2={h - pad.b + 4} stroke="var(--ink-3)" strokeWidth="1"/>
+            <text x={xs(i)} y={h - pad.b + 18} textAnchor="middle" fontFamily="var(--font-mono)" fontSize="10" fill="var(--ink-3)">
+              Y{i}
+            </text>
+          </g>
+        );
+      })}
+      {values.map((v, i) => (
+        <g key={'hit' + i} onMouseEnter={() => setHover(i)}>
+          <rect x={xs(i) - 10} y={0} width="20" height={h} fill="transparent"/>
+          {hover === i && (
+            <>
+              <line x1={xs(i)} x2={xs(i)} y1={pad.t} y2={h - pad.b} stroke="var(--terracotta)" strokeWidth="1"/>
+              <circle cx={xs(i)} cy={ys(v)} r="5" fill="var(--terracotta)" stroke="var(--paper)" strokeWidth="2"/>
+              <g transform={`translate(${xs(i)}, ${ys(v) - 20})`}>
+                <rect x="-50" y="-28" width="100" height="24" fill="var(--ink)" rx="3"/>
+                <text x="0" y="-11" textAnchor="middle" fontFamily="var(--font-mono)" fontSize="10" fill="var(--paper)">
+                  Y{i} · {fmt.kg(v)} kg
+                </text>
+              </g>
+            </>
+          )}
+        </g>
+      ))}
+    </svg>
+  );
+};
+
+const BarChart: React.FC<{ values: number[]; peakYear: number }> = ({ values, peakYear }) => {
+  const w = 1000, h = 260;
+  const pad = { t: 20, r: 30, b: 30, l: 60 };
+  const max = Math.max(...values, 1);
+  const barW = (w - pad.l - pad.r) / values.length;
+  const labelEvery = Math.max(1, Math.floor(values.length / 8));
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 260, display: 'block' }}>
+      {[0, 0.5, 1].map((g, i) => (
+        <g key={i}>
+          <line x1={pad.l} x2={w - pad.r}
+                y1={pad.t + g * (h - pad.t - pad.b)} y2={pad.t + g * (h - pad.t - pad.b)}
+                stroke="var(--stone)" strokeWidth="1"
+                strokeDasharray={g === 0 || g === 1 ? 'none' : '2 3'}/>
+          <text x={pad.l - 10} y={pad.t + g * (h - pad.t - pad.b) + 4}
+                textAnchor="end" fontFamily="var(--font-mono)" fontSize="10" fill="var(--ink-3)">
+            {fmt.kg(max * (1 - g))}
+          </text>
+        </g>
+      ))}
+      {values.map((v, i) => {
+        const bh = (v / max) * (h - pad.t - pad.b);
+        const isPeak = i === peakYear;
+        return (
+          <g key={i}>
+            <rect x={pad.l + i * barW + 2} y={h - pad.b - bh}
+                  width={barW - 4} height={bh}
+                  fill={isPeak ? 'var(--terracotta)' : 'var(--terracotta-soft)'}
+                  stroke={isPeak ? 'var(--terracotta-deep)' : 'none'} strokeWidth="1"/>
+            {(i === 0 || i === values.length - 1 || i === peakYear || i % labelEvery === 0) && (
+              <text x={pad.l + i * barW + barW / 2} y={h - pad.b + 18}
+                    textAnchor="middle" fontFamily="var(--font-mono)" fontSize="10"
+                    fill={isPeak ? 'var(--terracotta-deep)' : 'var(--ink-3)'}
+                    fontWeight={isPeak ? 600 : 400}>
+                Y{i}
+              </text>
+            )}
+            {isPeak && (
+              <g>
+                <line x1={pad.l + i * barW + barW / 2} y1={h - pad.b - bh - 4}
+                      x2={pad.l + i * barW + barW / 2} y2={pad.t + 6}
+                      stroke="var(--terracotta-deep)" strokeWidth="0.8" strokeDasharray="2 2"/>
+                <text x={pad.l + i * barW + barW / 2} y={pad.t}
+                      textAnchor="middle" fontFamily="var(--font-mono)" fontSize="9"
+                      fill="var(--terracotta-deep)" letterSpacing="0.08em">
+                  PEAK
+                </text>
+              </g>
+            )}
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+interface RankedItem {
+  id: string; common: string; scientific: string;
+  count: number; initialDbh: number;
+  totalFinal: number; perTreeFinal: number;
+}
+
+const SpeciesBars: React.FC<{ items: RankedItem[] }> = ({ items }) => {
+  const max = Math.max(...items.map(f => f.totalFinal), 1);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {items.map((f, i) => (
+        <div key={f.id}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <div style={{ fontSize: 13 }}>
+              <span style={{ fontWeight: 500 }}>{f.common}</span>
+              <span className="serif" style={{ fontStyle: 'italic', color: 'var(--ink-3)', marginLeft: 8, fontSize: 12 }}>
+                × {f.count}
+              </span>
+            </div>
+            <div className="mono" style={{ fontSize: 12, fontWeight: 500 }}>{fmt.kg(f.totalFinal)} kg</div>
+          </div>
+          <div style={{ height: 12, background: 'var(--paper-2)', borderRadius: 2, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%',
+              width: `${(f.totalFinal / max) * 100}%`,
+              background: i === 0 ? 'var(--olive)' : i === 1 ? 'var(--olive-deep)' : 'var(--olive-soft)',
+              transition: 'width .3s ease',
+            }}/>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const Scatter: React.FC<{ items: RankedItem[]; unit: DbhUnit }> = ({ items, unit }) => {
+  const w = 1000, h = 300;
+  const pad = { t: 20, r: 30, b: 40, l: 70 };
+  const toX = (dbh: number) => unit === 'in' ? cmToIn(dbh) : dbh;
+  const xVals = items.map(f => toX(f.initialDbh));
+  const yVals = items.map(f => f.perTreeFinal);
+  const maxX = Math.max(...xVals, 10) * 1.1;
+  const maxY = Math.max(...yVals, 1) * 1.1;
+  const xs = (v: number) => pad.l + (v / maxX) * (w - pad.l - pad.r);
+  const ys = (v: number) => pad.t + (1 - v / maxY) * (h - pad.t - pad.b);
+  const maxQty = Math.max(...items.map(f => f.count), 1);
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 300, display: 'block', overflow: 'visible' }}>
+      {[0, 0.25, 0.5, 0.75, 1].map((g, i) => (
+        <g key={i}>
+          <line x1={pad.l} x2={w - pad.r}
+                y1={pad.t + g * (h - pad.t - pad.b)} y2={pad.t + g * (h - pad.t - pad.b)}
+                stroke="var(--stone)"
+                strokeDasharray={g === 0 || g === 1 ? 'none' : '2 3'}/>
+          <text x={pad.l - 10} y={pad.t + g * (h - pad.t - pad.b) + 4}
+                textAnchor="end" fontFamily="var(--font-mono)" fontSize="10" fill="var(--ink-3)">
+            {fmt.kg(maxY * (1 - g))}
+          </text>
+        </g>
+      ))}
+      {[0, 0.25, 0.5, 0.75, 1].map((g, i) => (
+        <text key={i} x={pad.l + g * (w - pad.l - pad.r)} y={h - pad.b + 18}
+              textAnchor="middle" fontFamily="var(--font-mono)" fontSize="10" fill="var(--ink-3)">
+          {(maxX * g).toFixed(0)} {unit}
+        </text>
+      ))}
+      <text x={pad.l} y={h - 4} fontFamily="var(--font-mono)" fontSize="10" fill="var(--ink-3)" letterSpacing="0.08em">
+        INITIAL DBH ({unit.toUpperCase()})
+      </text>
+      <text x={pad.l - 50} y={pad.t + 10}
+            fontFamily="var(--font-mono)" fontSize="10" fill="var(--ink-3)" letterSpacing="0.08em"
+            transform={`rotate(-90 ${pad.l - 50} ${pad.t + 10})`}>
+        CO₂ / TREE (KG)
+      </text>
+      {items.map(f => {
+        const r = 6 + 12 * (f.count / maxQty);
+        const x = xs(toX(f.initialDbh));
+        const y = ys(f.perTreeFinal);
+        return (
+          <g key={f.id}>
+            <circle cx={x} cy={y} r={r} fill="var(--olive)" fillOpacity="0.25" stroke="var(--olive)" strokeWidth="1.4"/>
+            <text x={x} y={y - r - 6} textAnchor="middle"
+                  fontFamily="var(--font-sans)" fontSize="11" fill="var(--ink)" fontWeight="500">
+              {f.common}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+};
+
+const styles: Record<string, React.CSSProperties> = {
+  peakCard: {
+    padding: '16px 24px',
+    background: 'var(--olive-wash)',
+    border: '1px solid var(--olive-soft)',
+    borderRadius: 'var(--r-md)',
+    minWidth: 200,
+  },
 };
 
 export default Analytics;
