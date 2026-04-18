@@ -26,3 +26,4 @@ dist-ssr
 # Development documentation (AI session context, internal plans)
 docs/
 CLAUDE.md
+.gstack/

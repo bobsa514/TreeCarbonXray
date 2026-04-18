@@ -1,12 +1,11 @@
-
 import React, { lazy, Suspense, useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
+import TopNav from './components/TopNav';
+import { BotLeaf } from './components/Botanicals';
 import { TabView, BiomassDensity, ProjectTree, GrowthCoefficient, SpeciesInfo, RegionOption, ProjectMetadata, DbhUnit } from './types';
 import { DATA_URLS } from './constants';
 import { parseBiomassDensity, parseGrowthCoefficients, parseRegionalInfo } from './services/dataService';
 import { buildSpeciesCatalog, hydrateSpeciesCatalogImages, loadSpeciesImageMap } from './services/speciesCatalog';
 import { forecastTreeGrowth } from './services/carbonCalculator';
-import { Menu, Loader2, AlertTriangle } from 'lucide-react';
 
 const STORAGE_KEY = 'treecarbonxray_v1';
 const FALLBACK_DATA_URLS = {
@@ -15,55 +14,44 @@ const FALLBACK_DATA_URLS = {
   TS9_BIOMASS_DENSITY: new URL('./Data/TS9_Biomass_density_factors.csv', import.meta.url).href,
 };
 
-const Calculator = lazy(() => import('./components/Calculator'));
-const Dashboard = lazy(() => import('./components/Dashboard'));
+const Builder = lazy(() => import('./components/Calculator'));
+const Report = lazy(() => import('./components/Dashboard'));
 const Analytics = lazy(() => import('./components/Analytics'));
 
 interface StoredState {
   projectTrees: ProjectTree[];
   horizon: number;
   selectedRegion: string;
-  projectMetadata?: ProjectMetadata;  // optional for backwards compat
+  projectMetadata?: ProjectMetadata;
   dbhUnit?: DbhUnit;
 }
 
-const loadCsvWithFallback = async (
-  primaryUrl: string,
-  fallbackUrl: string,
-  label: string
-): Promise<string> => {
+const loadCsvWithFallback = async (primary: string, fallback: string, label: string): Promise<string> => {
   try {
-    const response = await fetch(primaryUrl, { cache: 'no-store' });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.text();
+    const r = await fetch(primary, { cache: 'no-store' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.text();
   } catch (error) {
     console.warn(`Primary ${label} load failed, using local fallback.`, error);
-    const fallbackResponse = await fetch(fallbackUrl, { cache: 'no-store' });
-    if (!fallbackResponse.ok) {
-      throw new Error(`Failed to load ${label} from both primary and fallback sources.`);
-    }
-    return fallbackResponse.text();
+    const fr = await fetch(fallback, { cache: 'no-store' });
+    if (!fr.ok) throw new Error(`Failed to load ${label} from both primary and fallback sources.`);
+    return fr.text();
   }
 };
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabView>('builder');
-  const [mobileOpen, setMobileOpen] = useState(false);
-  
-  // Application State
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Data State
   const [densities, setDensities] = useState<BiomassDensity[]>([]);
   const [growthCoeffs, setGrowthCoeffs] = useState<GrowthCoefficient[]>([]);
   const [speciesList, setSpeciesList] = useState<SpeciesInfo[]>([]);
   const [regions, setRegions] = useState<RegionOption[]>([]);
-  const [selectedRegion, setSelectedRegion] = useState<string>('');
-  
-  // Project State (The User's Inventory)
+  const [selectedRegion, setSelectedRegion] = useState('');
+
   const [projectTrees, setProjectTrees] = useState<ProjectTree[]>([]);
-  const [horizon, setHorizon] = useState<number>(20);
+  const [horizon, setHorizon] = useState(20);
   const [projectMetadata, setProjectMetadata] = useState<ProjectMetadata>({
     name: '',
     location: '',
@@ -72,56 +60,43 @@ const App: React.FC = () => {
   const [dbhUnit, setDbhUnit] = useState<DbhUnit>('cm');
   const [needsReconcile, setNeedsReconcile] = useState(false);
 
-  // Restore persisted project state on first load
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed: StoredState = JSON.parse(saved);
-        const valid = Array.isArray(parsed.projectTrees)
-          ? parsed.projectTrees.filter(
-              t => Array.isArray(t.forecastData) && t.forecastData.length > 0
-            )
-          : [];
-        if (valid.length > 0) {
-          setProjectTrees(valid);
-          setNeedsReconcile(true);  // flag for recalculation after data loads
-        }
-        if (typeof parsed.horizon === 'number') setHorizon(parsed.horizon);
-        if (typeof parsed.selectedRegion === 'string') setSelectedRegion(parsed.selectedRegion);
-        if (parsed.projectMetadata) setProjectMetadata(parsed.projectMetadata);
-        if (parsed.dbhUnit === 'cm' || parsed.dbhUnit === 'in') setDbhUnit(parsed.dbhUnit);
+      if (!saved) return;
+      const parsed: StoredState = JSON.parse(saved);
+      const valid = Array.isArray(parsed.projectTrees)
+        ? parsed.projectTrees.filter(t => Array.isArray(t.forecastData) && t.forecastData.length > 0)
+        : [];
+      if (valid.length > 0) {
+        setProjectTrees(valid);
+        setNeedsReconcile(true);
       }
+      if (typeof parsed.horizon === 'number') setHorizon(parsed.horizon);
+      if (typeof parsed.selectedRegion === 'string') setSelectedRegion(parsed.selectedRegion);
+      if (parsed.projectMetadata) setProjectMetadata(parsed.projectMetadata);
+      if (parsed.dbhUnit === 'cm' || parsed.dbhUnit === 'in') setDbhUnit(parsed.dbhUnit);
     } catch {
       localStorage.removeItem(STORAGE_KEY);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Save project state to localStorage (debounced 500ms)
   useEffect(() => {
-    const timeout = setTimeout(() => {
+    const t = setTimeout(() => {
       try {
         const toSave: StoredState = { projectTrees, horizon, selectedRegion, projectMetadata, dbhUnit };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-      } catch {
-        // Storage quota exceeded — skip silently
-      }
+      } catch { /* quota exceeded */ }
     }, 500);
-    return () => clearTimeout(timeout);
+    return () => clearTimeout(t);
   }, [projectTrees, horizon, selectedRegion, projectMetadata, dbhUnit]);
 
-  // After data loads, reconcile any restored trees against fresh coefficients and current horizon
   useEffect(() => {
     if (!needsReconcile || densities.length === 0 || growthCoeffs.length === 0) return;
     setNeedsReconcile(false);
     setProjectTrees(prev => prev.map(tree => {
       const { annualData, currentCarbon, modelConfidence, modelSourceScientific } = forecastTreeGrowth(
-        tree.speciesScientific,
-        tree.initialDbh,
-        horizon,
-        densities,
-        growthCoeffs,
-        selectedRegion || undefined
+        tree.speciesScientific, tree.initialDbh, horizon, densities, growthCoeffs, selectedRegion || undefined,
       );
       return {
         ...tree,
@@ -129,227 +104,145 @@ const App: React.FC = () => {
         modelSourceScientific,
         forecastData: annualData,
         initialHeight: annualData[0]?.height ?? tree.initialHeight,
-        currentCarbon: currentCarbon * tree.count
+        currentCarbon: currentCarbon * tree.count,
       };
     }));
   }, [needsReconcile, densities, growthCoeffs, horizon, selectedRegion]);
 
-  // Load Data on Mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-
-        // Parallel fetch for essential calculation data and curated image map.
-        // TS files use network-first with local in-bundle fallback for resilience.
         const [ts9Text, ts6Text, ts1Text, speciesImages] = await Promise.all([
-          loadCsvWithFallback(
-            DATA_URLS.TS9_BIOMASS_DENSITY,
-            FALLBACK_DATA_URLS.TS9_BIOMASS_DENSITY,
-            'Density Data (TS9)'
-          ),
-          loadCsvWithFallback(
-            DATA_URLS.TS6_GROWTH_COEFFICIENTS,
-            FALLBACK_DATA_URLS.TS6_GROWTH_COEFFICIENTS,
-            'Growth Data (TS6)'
-          ),
-          loadCsvWithFallback(
-            DATA_URLS.TS1_REGIONAL_INFO,
-            FALLBACK_DATA_URLS.TS1_REGIONAL_INFO,
-            'Regional Data (TS1)'
-          ),
+          loadCsvWithFallback(DATA_URLS.TS9_BIOMASS_DENSITY, FALLBACK_DATA_URLS.TS9_BIOMASS_DENSITY, 'Density Data (TS9)'),
+          loadCsvWithFallback(DATA_URLS.TS6_GROWTH_COEFFICIENTS, FALLBACK_DATA_URLS.TS6_GROWTH_COEFFICIENTS, 'Growth Data (TS6)'),
+          loadCsvWithFallback(DATA_URLS.TS1_REGIONAL_INFO, FALLBACK_DATA_URLS.TS1_REGIONAL_INFO, 'Regional Data (TS1)'),
           loadSpeciesImageMap(),
         ]);
 
         const parsedDensities = parseBiomassDensity(ts9Text);
         const parsedGrowthCoeffs = parseGrowthCoefficients(ts6Text);
-
         setDensities(parsedDensities);
         setGrowthCoeffs(parsedGrowthCoeffs);
 
-        // Generate species catalog with images for autocomplete and picker
         const catalog = buildSpeciesCatalog(parsedDensities, parsedGrowthCoeffs, speciesImages);
         setSpeciesList(catalog);
-        // Enrich fallback cards in the background with species-specific images.
-        void hydrateSpeciesCatalogImages(catalog, speciesImages)
-          .then(setSpeciesList)
-          .catch((imageErr) => {
-            console.warn('Image enrichment skipped:', imageErr);
-          });
+        void hydrateSpeciesCatalogImages(catalog, speciesImages).then(setSpeciesList).catch(() => {});
 
         const rawRegions = parseRegionalInfo(ts1Text);
-        setRegions(rawRegions.map(r => ({
-          code: r.regionCode,
-          name: r.regionName,
-          city: r.city,
-          state: r.state,
-        })));
+        setRegions(rawRegions.map(r => ({ code: r.regionCode, name: r.regionName, city: r.city, state: r.state })));
 
         setLoading(false);
-
       } catch (err) {
-        console.error("Data Loading Error:", err);
-        setError(err instanceof Error ? err.message : "An unknown error occurred loading data.");
+        console.error('Data Loading Error:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred loading data.');
         setLoading(false);
       }
     };
-
     fetchData();
   }, []);
+
+  const clearProject = () => {
+    setProjectTrees([]);
+    setProjectMetadata({ name: '', location: '', date: new Date().toISOString().split('T')[0] });
+  };
+
+  const TabLoader: React.FC = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh', gap: 12 }}>
+      <BotLeaf size={32} style={{ color: 'var(--olive)' }}/>
+      <p className="mono" style={{ fontSize: 11, color: 'var(--ink-3)', letterSpacing: '0.1em' }}>LOADING VIEW…</p>
+    </div>
+  );
 
   const renderContent = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center h-[80vh]">
-           <Loader2 className="w-12 h-12 text-forest-600 animate-spin mb-4" />
-           <h2 className="text-xl font-semibold text-gray-800">Loading Model Data...</h2>
-           <p className="text-gray-500 mt-2">Fetching growth coefficients from repository.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '70vh', gap: 14 }}>
+          <BotLeaf size={40} style={{ color: 'var(--olive)', animation: 'pulse 1.5s ease-in-out infinite' }}/>
+          <div className="eyebrow">Loading model data</div>
+          <p className="body" style={{ color: 'var(--ink-3)' }}>Fetching growth coefficients from USFS i-Tree dataset.</p>
         </div>
       );
     }
-
     if (error) {
       return (
-        <div className="flex flex-col items-center justify-center h-[80vh] text-center px-4">
-           <div className="bg-red-50 p-4 rounded-full mb-4">
-             <AlertTriangle className="w-12 h-12 text-red-500" />
-           </div>
-           <h2 className="text-xl font-bold text-gray-800">Error Loading Data</h2>
-           <p className="text-gray-600 mt-2 max-w-md">{error}</p>
-           <button 
-             onClick={() => window.location.reload()}
-             className="mt-6 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900"
-           >
-             Retry
-           </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '70vh', textAlign: 'center', padding: 32 }}>
+          <div className="eyebrow" style={{ color: 'var(--terracotta-deep)' }}>Error</div>
+          <h2 className="serif" style={{ fontSize: 40, margin: '8px 0 12px', letterSpacing: '-0.02em' }}>Could not load data.</h2>
+          <p className="body" style={{ maxWidth: 480 }}>{error}</p>
+          <button className="btn" style={{ marginTop: 24 }} onClick={() => window.location.reload()}>Retry</button>
         </div>
       );
     }
 
-    switch(activeTab) {
+    switch (activeTab) {
       case 'builder':
         return (
-          <Suspense fallback={<TabLoader />}>
-            <Calculator
-              densities={densities}
-              growthCoeffs={growthCoeffs}
-              projectTrees={projectTrees}
-              setProjectTrees={setProjectTrees}
+          <Suspense fallback={<TabLoader/>}>
+            <Builder
+              densities={densities} growthCoeffs={growthCoeffs}
+              projectTrees={projectTrees} setProjectTrees={setProjectTrees}
               switchToDashboard={() => setActiveTab('dashboard')}
               speciesList={speciesList}
               regions={regions}
-              selectedRegion={selectedRegion}
-              setSelectedRegion={setSelectedRegion}
-              horizon={horizon}
-              setHorizon={setHorizon}
-              dbhUnit={dbhUnit}
-              setDbhUnit={setDbhUnit}
+              selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion}
+              horizon={horizon} setHorizon={setHorizon}
+              dbhUnit={dbhUnit} setDbhUnit={setDbhUnit}
             />
           </Suspense>
         );
       case 'dashboard':
         return (
-          <Suspense fallback={<TabLoader />}>
-            <Dashboard
+          <Suspense fallback={<TabLoader/>}>
+            <Report
               projectTrees={projectTrees}
               switchToBuilder={() => setActiveTab('builder')}
-              projectMetadata={projectMetadata}
-              setProjectMetadata={setProjectMetadata}
-              horizon={horizon}
-              dbhUnit={dbhUnit}
+              projectMetadata={projectMetadata} setProjectMetadata={setProjectMetadata}
+              horizon={horizon} dbhUnit={dbhUnit}
             />
           </Suspense>
         );
       case 'analytics':
         return (
-          <Suspense fallback={<TabLoader />}>
-            <Analytics projectTrees={projectTrees} />
-          </Suspense>
-        );
-      default:
-        return (
-          <Suspense fallback={<TabLoader />}>
-            <Calculator
-              densities={densities}
-              growthCoeffs={growthCoeffs}
-              projectTrees={projectTrees}
-              setProjectTrees={setProjectTrees}
-              switchToDashboard={() => setActiveTab('dashboard')}
-              speciesList={speciesList}
-              regions={regions}
-              selectedRegion={selectedRegion}
-              setSelectedRegion={setSelectedRegion}
-              horizon={horizon}
-              setHorizon={setHorizon}
-              dbhUnit={dbhUnit}
-              setDbhUnit={setDbhUnit}
-            />
+          <Suspense fallback={<TabLoader/>}>
+            <Analytics projectTrees={projectTrees} switchToBuilder={() => setActiveTab('builder')} horizon={horizon} dbhUnit={dbhUnit}/>
           </Suspense>
         );
     }
   };
 
-  const TabLoader: React.FC = () => (
-    <div className="flex flex-col items-center justify-center h-[50vh]">
-      <Loader2 className="w-10 h-10 text-forest-600 animate-spin mb-3" />
-      <p className="text-sm text-gray-500">Loading view...</p>
-    </div>
-  );
-
-  const getTitle = () => {
-      if (activeTab === 'builder') return 'Inventory & Forecast';
-      if (activeTab === 'dashboard') return 'Impact Report';
-      if (activeTab === 'analytics') return 'Analytics';
-      return '';
-  };
-
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden font-sans text-slate-800">
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        mobileOpen={mobileOpen}
-        setMobileOpen={setMobileOpen}
+    <>
+      <TopNav
+        activeTab={activeTab} setActiveTab={setActiveTab}
+        projectTrees={projectTrees}
+        onClearProject={clearProject}
+        horizon={horizon} setHorizon={setHorizon}
+        regions={regions}
+        selectedRegion={selectedRegion} setSelectedRegion={setSelectedRegion}
+        dbhUnit={dbhUnit} setDbhUnit={setDbhUnit}
       />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white h-16 flex items-center justify-between px-6 z-10"
-                style={{ borderBottom: '2px solid #b4e6c5', boxShadow: '0 1px 12px rgba(34,128,75,0.06)' }}>
-          <div className="flex items-center">
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden mr-4 text-gray-500 hover:text-gray-700"
-            >
-              <Menu />
-            </button>
-            <h1 className="text-xl font-bold text-forest-900 tracking-tight">{getTitle()}</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            {projectTrees.length > 0 && (
-              <button
-                onClick={() => {
-                  if (confirm('Clear all trees from this project?')) {
-                    setProjectTrees([]);
-                    setProjectMetadata({ name: '', location: '', date: new Date().toISOString().split('T')[0] });
-                  }
-                }}
-                className="text-sm text-gray-400 hover:text-red-500 transition-colors px-3 py-1.5 rounded-lg hover:bg-red-50"
-              >
-                Clear Project
-              </button>
-            )}
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-auto p-6 bg-slate-50/50">
-          <div className="max-w-7xl mx-auto">
-            {renderContent()}
-          </div>
-        </main>
-      </div>
-    </div>
+      <main style={{ animation: 'fadeUp .4s ease' }} key={activeTab}>
+        {renderContent()}
+      </main>
+      <footer style={{
+        padding: 32, borderTop: '1px solid var(--stone)', marginTop: 40,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        color: 'var(--ink-3)', fontSize: 11,
+      }} className="no-print">
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <BotLeaf size={16} style={{ color: 'var(--olive)' }}/>
+          <span className="mono" style={{ letterSpacing: '0.08em' }}>
+            TREECARBONXRAY · USFS i-TREE TS6/TS9 DATASET
+          </span>
+        </div>
+        <div style={{ display: 'flex', gap: 20 }}>
+          <span className="mono">{speciesList.length || 194} SPECIES</span>
+          <span className="mono">{regions.length || 16} REGIONS</span>
+          <span className="mono">OFFLINE-CAPABLE</span>
+        </div>
+      </footer>
+    </>
   );
 };
 
